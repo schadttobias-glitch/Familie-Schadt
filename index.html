@@ -325,33 +325,55 @@ function findDefaultRecipeId(i, slot) {
   const r = RECIPES[kat] && RECIPES[kat].items.find(x => x.name === name);
   return r ? r.id : null;
 }
+function scaleIngredient(s, f) {
+  if (f === 1) return s;
+  const m = s.match(/^(\d+(?:[.,]\d+)?)(.*)$/);
+  if (!m) return s;
+  const n = Math.round(parseFloat(m[1].replace(",", ".")) * f * 10) / 10;
+  return (n % 1 === 0 ? String(n) : String(n).replace(".", ",")) + m[2];
+}
 function getMeal(i, slot) {
   const key = i+"-"+slot, wk = curWeekKey();
-  const base = {n:PLAN[i][slot], kc:PLAN[i][slot+"kc"], p:PLAN[i][slot+"p"], vc:PLAN[i][slot+"vc"], fe:PLAN[i][slot+"fe"], ca:PLAN[i][slot+"ca"], rid:findDefaultRecipeId(i, slot)};
-  const ov = W.weekOv[wk] && W.weekOv[wk][key];
-  if (ov === undefined) return base;
-  const r = findRecipe(ov);
-  if (r) return {n:r.name, kc:r.kc, p:r.p, vc:r.vc, fe:r.fe, ca:r.ca, rid:r.id};
+  const defRid = findDefaultRecipeId(i, slot);
+  const base = {n:PLAN[i][slot], kc:PLAN[i][slot+"kc"], p:PLAN[i][slot+"p"], vc:PLAN[i][slot+"vc"], fe:PLAN[i][slot+"fe"], ca:PLAN[i][slot+"ca"], rid:defRid, portions:null};
+  const raw = W.weekOv[wk] && W.weekOv[wk][key];
+  if (raw === undefined) {
+    const dr = findRecipe(defRid);
+    return {...base, portions: dr ? (dr.basePortions||4) : null};
+  }
+  const rid = (raw && typeof raw === "object") ? raw.rid : raw;
+  const portionsOv = (raw && typeof raw === "object") ? raw.portions : null;
+  const r = findRecipe(rid);
+  if (r) return {n:r.name, kc:r.kc, p:r.p, vc:r.vc, fe:r.fe, ca:r.ca, rid:r.id, portions: portionsOv || r.basePortions || 4};
   // Legacy: vor der Rezeptliste konnte hier nur ein reiner Textname gespeichert werden.
-  return {...base, n:ov, rid:null};
+  return {...base, n:rid, rid:null, portions:null};
 }
 function setMealOv(key, val) {
   const wk = curWeekKey();
   if (!W.weekOv[wk]) W.weekOv[wk] = {};
-  if (val === "") delete W.weekOv[wk][key]; else W.weekOv[wk][key] = val;
+  if (val === "") delete W.weekOv[wk][key];
+  else { const r=findRecipe(val); W.weekOv[wk][key] = {rid:val, portions:(r&&r.basePortions)||4}; }
 }
 function onMealSelect(key, val) {
   if (val === "__new__") { W.mealNewForm = key; sv(); rPlan(); return; }
   setMealOv(key, val);
   W.mealNewForm = null; W.mealEdit = null; sv(); rPlan();
 }
+function setMealPortions(i, slot, portions) {
+  const key = i+"-"+slot, wk = curWeekKey(), meal = getMeal(i, slot);
+  if (!meal.rid) return;
+  if (!W.weekOv[wk]) W.weekOv[wk] = {};
+  W.weekOv[wk][key] = {rid: meal.rid, portions: Math.max(1, Math.min(20, portions))};
+  sv(); rPlan();
+}
 function saveNewRecipe(key) {
   const slot = key.split("-")[1], kat = SLOT_KAT[slot];
   const name = document.getElementById("nrn_"+key)?.value.trim();
   if (!name) return;
   const zutText = document.getElementById("nrz_"+key)?.value.trim() || "";
+  const basePortions = Math.max(1, Number(document.getElementById("nrport_"+key)?.value)||4);
   const rec = {
-    id: "u"+Date.now(), name, kat,
+    id: "u"+Date.now(), name, kat, basePortions,
     kc: Number(document.getElementById("nrkc_"+key)?.value)||0,
     p: Number(document.getElementById("nrp_"+key)?.value)||0,
     vc: Number(document.getElementById("nrvc_"+key)?.value)||0,
@@ -361,7 +383,9 @@ function saveNewRecipe(key) {
   };
   if (!W.customRecipes) W.customRecipes = [];
   W.customRecipes.push(rec);
-  setMealOv(key, rec.id);
+  const wk = curWeekKey();
+  if (!W.weekOv[wk]) W.weekOv[wk] = {};
+  W.weekOv[wk][key] = {rid: rec.id, portions: basePortions};
   W.mealNewForm = null; W.mealEdit = null;
   sv(); rPlan();
 }
@@ -371,7 +395,10 @@ function getPlanIngredients() {
     ["f","m","a","s"].forEach(slot => {
       const meal = getMeal(di, slot);
       const r = meal.rid ? findRecipe(meal.rid) : null;
-      if (r && r.zutaten) r.zutaten.forEach(z => { const k=z.trim().toLowerCase(); if(!seen.has(k)){seen.add(k);out.push(z);} });
+      if (r && r.zutaten && r.zutaten.length) {
+        const factor = (meal.portions || r.basePortions || 4) / (r.basePortions || 4);
+        r.zutaten.forEach(z => { const scaled=scaleIngredient(z,factor); const k=scaled.trim().toLowerCase(); if(!seen.has(k)){seen.add(k);out.push(scaled);} });
+      }
     });
   }
   return out;
@@ -561,6 +588,13 @@ document.addEventListener("click", function(e) {
   if (sf2) { saveFamily(); return; }
   const sk2 = e.target.closest("[data-save-kid]");
   if (sk2) { saveKid(sk2.dataset.saveKid); return; }
+  const pbtn = e.target.closest("[data-portion]");
+  if (pbtn) {
+    const [di, slot] = pbtn.dataset.portion.split("-");
+    const meal = getMeal(parseInt(di), slot);
+    setMealPortions(parseInt(di), slot, meal.portions + parseInt(pbtn.dataset.delta));
+    return;
+  }
 });
 document.addEventListener("change", function(e) {
   const ms = e.target.closest("[data-meal-select]");
@@ -734,10 +768,21 @@ function rPlan() {
           + `<input id="nrfe_${key}" type="number" class="fi" placeholder="Eisen mg">`
           + `<input id="nrca_${key}" type="number" class="fi" placeholder="Calcium mg">`
           + `<textarea id="nrz_${key}" class="fi" placeholder="Zutaten fuer die Einkaufsliste - eine pro Zeile (leer lassen z.B. bei Essen unterwegs)" style="min-height:60px;resize:vertical"></textarea>`
+          + `<input id="nrport_${key}" type="number" class="fi" value="4" placeholder="Zutaten reichen fuer wie viele Portionen?">`
           + `<button data-save-new-recipe="${key}" class="sb">Rezept speichern</button></div>`;
       }
     }
-    h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div></div>`;
+    h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div>`;
+    const rcp = meal.rid ? findRecipe(meal.rid) : null;
+    if (rcp && rcp.zutaten && rcp.zutaten.length) {
+      const factor = meal.portions / (rcp.basePortions||4);
+      h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd2)">`
+        + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--t2)">Zutaten fuer</span>`
+        + `<span style="display:flex;align-items:center;gap:6px"><button data-portion="${key}" data-delta="-1" style="width:22px;height:22px;border-radius:6px;border:none;background:var(--hb);color:#764ba2;font-weight:800;cursor:pointer">-</button><b style="font-size:12px;color:var(--t1)">${meal.portions} Portionen</b><button data-portion="${key}" data-delta="1" style="width:22px;height:22px;border-radius:6px;border:none;background:var(--hb);color:#764ba2;font-weight:800;cursor:pointer">+</button></span></div>`
+        + rcp.zutaten.map(z => `<div style="font-size:11px;color:var(--t2);padding:2px 0">- ${scaleIngredient(z,factor)}</div>`).join("")
+        + `</div>`;
+    }
+    h += `</div>`;
   });
   document.getElementById("t-plan").innerHTML = h;
 }
