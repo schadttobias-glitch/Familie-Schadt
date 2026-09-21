@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Familie Schadt">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#764ba2">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Familie Schadt</title>
 <style>
 :root{--cb:#fff;--cb2:#f8f8ff;--ib:#fff;--hb:#f5f5f5;--sb:#f0f0f0;--t1:#222;--t2:#666;--t3:#999;--t4:#ccc;--bd:#eee;--bd2:#f5f5f5;--dg:#ffebee}
@@ -113,6 +119,7 @@ input,select,textarea{font-family:inherit}
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <div id="hbb" style="background:rgba(255,255,255,0.2);border-radius:9px;padding:4px 9px;font-size:11px;font-weight:700;color:white">Woche</div>
+      <span id="sync-badge" style="display:none;align-items:center;justify-content:center;width:26px;height:26px;font-size:13px;color:white"></span>
       <button data-toggle-dark="1" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:5px 8px;color:white;font-size:11px;font-weight:700;cursor:pointer">&#127769;</button>
       <button data-goto-start="1" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:5px 8px;color:white;font-size:11px;font-weight:700;cursor:pointer">&#8962;</button>
     </div>
@@ -289,8 +296,85 @@ let W = {
   ],
 };
 
-const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} };
+const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} pushCloudSync(); };
 const ld = () => { try { const d = localStorage.getItem("fs11"); if(d) W = {...W, ...JSON.parse(d)}; } catch(e) {} };
+
+// CLOUD-SYNC (Firebase Realtime Database)
+// Nach Einrichtung eines kostenlosen Firebase-Projekts hier die Config einfuegen (siehe Anleitung).
+// Solange FIREBASE_CONFIG = null ist, laeuft die App exakt wie vorher rein lokal auf dem Geraet - kein Sync, keine Netzwerkzugriffe.
+const FIREBASE_CONFIG = null;
+/* Beispiel:
+const FIREBASE_CONFIG = {
+  apiKey: "...", authDomain: "....firebaseapp.com", databaseURL: "https://....firebasedatabase.app",
+  projectId: "...", storageBucket: "....appspot.com", messagingSenderId: "...", appId: "..."
+};
+*/
+const SYNC_PATH = "sync/state";
+const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm"];
+let syncDbRef = null, syncApplyingRemote = false, syncPushTimer = null, syncLastPushedAt = 0, syncStatus = "off";
+function syncableState() {
+  const out = {};
+  Object.keys(W).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) out[k] = W[k]; });
+  return out;
+}
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src="'+src+'"]')) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error("load failed: "+src));
+    document.head.appendChild(s);
+  });
+}
+function renderSyncBadge() {
+  const el = document.getElementById("sync-badge");
+  if (!el) return;
+  if (!FIREBASE_CONFIG) { el.style.display = "none"; return; }
+  const map = {
+    off: {i:"", t:""},
+    connecting: {i:"&#8987;", t:"Cloud-Sync: verbinde..."},
+    synced: {i:"&#9729;&#65039;", t:"Cloud-Sync aktiv - Daten werden mit allen Geraeten abgeglichen"},
+    error: {i:"&#9888;&#65039;", t:"Cloud-Sync: Verbindungsfehler"}
+  };
+  const s = map[syncStatus] || map.off;
+  el.style.display = "flex";
+  el.innerHTML = s.i;
+  el.title = s.t;
+}
+async function initCloudSync() {
+  if (!FIREBASE_CONFIG) { syncStatus = "off"; renderSyncBadge(); return; }
+  syncStatus = "connecting"; renderSyncBadge();
+  try {
+    await loadScriptOnce("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
+    await loadScriptOnce("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js");
+    await loadScriptOnce("https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js");
+    firebase.initializeApp(FIREBASE_CONFIG);
+    await firebase.auth().signInAnonymously();
+    syncDbRef = firebase.database().ref(SYNC_PATH);
+    syncDbRef.on("value", snap => {
+      const remote = snap.val();
+      if (!remote || !remote.updatedAt || !remote.data) { syncStatus = "synced"; renderSyncBadge(); return; }
+      if (remote.updatedAt <= syncLastPushedAt) { syncStatus = "synced"; renderSyncBadge(); return; }
+      syncApplyingRemote = true;
+      Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
+      syncLastPushedAt = remote.updatedAt;
+      try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
+      syncApplyingRemote = false;
+      syncStatus = "synced"; renderSyncBadge();
+      renderHeader(); renderDays(); renderCurrent();
+    }, () => { syncStatus = "error"; renderSyncBadge(); });
+  } catch (e) {
+    syncStatus = "error"; renderSyncBadge();
+  }
+}
+function pushCloudSync() {
+  if (!FIREBASE_CONFIG || !syncDbRef || syncApplyingRemote) return;
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(() => {
+    const ts = Date.now();
+    syncLastPushedAt = ts;
+    syncDbRef.set({ updatedAt: ts, data: syncableState() }).catch(() => { syncStatus = "error"; renderSyncBadge(); });
+  }, 600);
+}
 const pct = (v,t) => Math.min(100, Math.round(v/t*100));
 const bc = p => p>=80?"#4caf50":p>=50?"#ff9800":"#f44336";
 const fmtD = s => { const[y,m,d]=s.split("-"); return d+"."+m+"."+y; };
@@ -517,6 +601,14 @@ function personCard(k, ageField) {
 }
 function rEinstellungen() {
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Einstellungen</div>`;
+  const syncMap = {
+    off: {c:"#999", t:"Nicht eingerichtet", d:"Daten liegen nur lokal auf diesem Geraet (mit App-Icon installierbar, funktioniert offline). Fuer automatischen Abgleich zwischen mehreren Geraeten wird eine kostenlose Cloud-Datenbank benoetigt."},
+    connecting: {c:"#ff9800", t:"Verbinde...", d:"Verbindung zur Cloud wird aufgebaut."},
+    synced: {c:"#4caf50", t:"Aktiv - synchronisiert", d:"Aenderungen auf diesem Geraet werden automatisch mit allen anderen Geraeten der Familie abgeglichen."},
+    error: {c:"#f44336", t:"Verbindungsfehler", d:"Cloud-Sync ist eingerichtet, aber gerade nicht erreichbar. Lokale Daten sind trotzdem sicher gespeichert."}
+  };
+  const ss = syncMap[syncStatus] || syncMap.off;
+  h += `<div class="card"><div class="ct">Cloud-Sync</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:10px;height:10px;border-radius:50%;background:${ss.c};flex-shrink:0"></span><b style="font-size:13px;color:var(--t1)">${ss.t}</b></div><div style="font-size:11px;color:var(--t2);line-height:1.5">${ss.d}</div></div>`;
   h += `<div class="card"><div class="ct">Familie</div>`
     + `<div style="margin-bottom:8px">${fieldBlock("Familienname", `<input id="setFn" class="fi" style="margin-bottom:0" value="${esc(W.familyName)}">`)}</div>`
     + `<div style="margin-bottom:8px">${fieldBlock("Mitglieder-Zeile (unter dem Familiennamen)", `<input id="setFm" class="fi" style="margin-bottom:0" value="${esc(W.familyMembers)}">`)}</div>`
@@ -1291,6 +1383,10 @@ ld();
 migrateMealOv();
 renderHeader();
 showScr("start");
+initCloudSync();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
 </script>
 </body>
 </html>
