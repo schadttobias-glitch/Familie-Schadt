@@ -277,6 +277,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
+  planTemplates:{}, showTpl:false,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -407,6 +408,41 @@ function getPlanIngredients() {
   }
   return out;
 }
+function saveTemplate() {
+  const name = document.getElementById("tplName")?.value.trim();
+  if (!name) return;
+  const wk = curWeekKey();
+  if (!W.planTemplates) W.planTemplates = {};
+  W.planTemplates[name] = JSON.parse(JSON.stringify(W.weekOv[wk] || {}));
+  sv(); rPlan();
+}
+function applyTemplate(name) {
+  const tpl = W.planTemplates && W.planTemplates[name];
+  if (!tpl) return;
+  if (!confirm('Vorlage "'+name+'" auf diese Woche anwenden? Bestehende Auswahl fuer diese Woche wird ersetzt.')) return;
+  W.weekOv[curWeekKey()] = JSON.parse(JSON.stringify(tpl));
+  sv(); rPlan();
+}
+function deleteTemplate(name) {
+  if (W.planTemplates) delete W.planTemplates[name];
+  sv(); rPlan();
+}
+function fillWeekRandom() {
+  if (!confirm("Ersetzt die Rezeptauswahl fuer die gesamte angezeigte Woche mit einem zufaelligen, abwechslungsreichen Plan. Fortfahren?")) return;
+  const wk = curWeekKey();
+  if (!W.weekOv[wk]) W.weekOv[wk] = {};
+  ["f","m","a","s"].forEach(slot => {
+    const kat = SLOT_KAT[slot];
+    const pool = [...(RECIPES[kat] ? RECIPES[kat].items : [])];
+    for (let i=pool.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+    for (let di=0; di<7; di++) {
+      if (!pool.length) continue;
+      const r = pool[di % pool.length];
+      W.weekOv[wk][di+"-"+slot] = {rid: r.id, portions: r.basePortions||4};
+    }
+  });
+  sv(); rPlan();
+}
 
 // UTILITIES: Dark Mode, Backup, Teilen
 function applyDark() { document.body.classList.toggle("dark", !!W.dark); }
@@ -517,6 +553,61 @@ function shareEinkauf() {
   });
   shareOrCopy("Einkaufsliste", lines.join("\n"));
 }
+const ICS_DAY = {Mo:"MO",Di:"TU",Mi:"WE",Do:"TH",Fr:"FR",Sa:"SA",So:"SU"};
+function nextDateForWeekday(dayStr, timeStr) {
+  const targetIdx = DAYS.indexOf(dayStr);
+  const now = new Date();
+  const curIdx = (now.getDay()+6)%7;
+  const diff = (targetIdx - curIdx + 7) % 7;
+  const d = new Date(now);
+  d.setDate(d.getDate()+diff);
+  if (timeStr) { const [h,m] = timeStr.split(":").map(Number); d.setHours(h||0, m||0, 0, 0); }
+  else d.setHours(9,0,0,0);
+  return d;
+}
+function icsDate(d) {
+  const p = n => String(n).padStart(2,"0");
+  return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"T"+p(d.getHours())+p(d.getMinutes())+"00";
+}
+function icsStamp(d) {
+  const p = n => String(n).padStart(2,"0");
+  return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+"T"+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+"Z";
+}
+function icsEscape(s) { return String(s).replace(/[\\;,]/g, m => "\\"+m).replace(/\n/g,"\\n"); }
+function exportICS() {
+  const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Familie Schadt//App//DE","CALSCALE:GREGORIAN"];
+  const stamp = icsStamp(new Date());
+  let uidN = 0;
+  const addEvent = (title, dt, who, rrule) => {
+    uidN++;
+    lines.push("BEGIN:VEVENT");
+    lines.push("UID:fs-"+Date.now()+"-"+uidN+"@familie-schadt");
+    lines.push("DTSTAMP:"+stamp);
+    lines.push("DTSTART:"+icsDate(dt));
+    lines.push("SUMMARY:"+icsEscape(title));
+    if (who) lines.push("DESCRIPTION:"+icsEscape(who));
+    if (rrule) lines.push("RRULE:"+rrule);
+    lines.push("END:VEVENT");
+  };
+  W.rec.forEach(r => addEvent(r.title, nextDateForWeekday(r.day, r.time), r.who, "FREQ=WEEKLY;BYDAY="+ICS_DAY[r.day]));
+  W.apts.forEach(a => {
+    if (a.date) {
+      const [y,m,d] = a.date.split("-").map(Number);
+      const dt = new Date(y, m-1, d);
+      if (a.time) { const [h,mi] = a.time.split(":").map(Number); dt.setHours(h||0, mi||0); } else dt.setHours(9,0);
+      addEvent(a.title, dt, a.who, null);
+    } else {
+      addEvent(a.title, nextDateForWeekday(a.day, a.time), a.who, "FREQ=WEEKLY;BYDAY="+ICS_DAY[a.day]);
+    }
+  });
+  lines.push("END:VCALENDAR");
+  const blob = new Blob([lines.join("\r\n")], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "familie-schadt-termine.ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
 
 // SCREENS
 function showScr(id) {
@@ -589,6 +680,18 @@ document.addEventListener("click", function(e) {
   if (td2) { W.dark=!W.dark; sv(); applyDark(); return; }
   const eb = e.target.closest("[data-export-backup]");
   if (eb) { exportBackup(); return; }
+  const eics = e.target.closest("[data-export-ics]");
+  if (eics) { exportICS(); return; }
+  const ftpl = e.target.closest("[data-toggle-tpl]");
+  if (ftpl) { W.showTpl=!W.showTpl; sv(); rPlan(); return; }
+  const stpl = e.target.closest("[data-save-template]");
+  if (stpl) { saveTemplate(); return; }
+  const atpl = e.target.closest("[data-apply-template]");
+  if (atpl) { applyTemplate(atpl.dataset.applyTemplate); return; }
+  const dtpl = e.target.closest("[data-del-template]");
+  if (dtpl) { deleteTemplate(dtpl.dataset.delTemplate); return; }
+  const frnd = e.target.closest("[data-fill-random]");
+  if (frnd) { fillWeekRandom(); return; }
   const em = e.target.closest("[data-edit-meal]");
   if (em) { W.mealEdit = W.mealEdit===em.dataset.editMeal?null:em.dataset.editMeal; W.mealNewForm=null; sv(); rPlan(); return; }
   const snr = e.target.closest("[data-save-new-recipe]");
@@ -764,6 +867,13 @@ function rPlan() {
   const p=PLAN[W.day], pn=pN(W.day);
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-share-plan="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (p.note) h += `<div style="background:rgba(255,255,255,0.22);border-radius:10px;padding:6px 11px;color:white;font-weight:700;font-size:11px;margin-bottom:7px">${p.note}</div>`;
+  const tplNames = Object.keys(W.planTemplates||{});
+  h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;${W.showTpl||tplNames.length?"margin-bottom:8px":""}"><div class="ct" style="margin:0">Wochenplan-Vorlagen</div><div style="display:flex;gap:5px"><button data-fill-random="1" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer">&#128256; Zufaellig</button><button data-toggle-tpl="1" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer">${W.showTpl?"Zu":"+"}</button></div></div>`;
+  if (W.showTpl) h += `<input id="tplName" class="fi" placeholder="Name (z.B. Standardwoche)"><button data-save-template="1" class="sb" style="margin-bottom:8px">Diese Woche als Vorlage speichern</button>`;
+  if (tplNames.length) {
+    h += tplNames.map(name => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t1)">${esc(name)}</span><div style="display:flex;gap:5px"><button data-apply-template="${esc(name)}" style="background:#764ba2;color:white;border:none;border-radius:7px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer">Anwenden</button><button data-del-template="${esc(name)}" class="dlb" style="width:auto;padding:5px 9px;font-size:11px">x</button></div></div>`).join("");
+  }
+  h += `</div>`;
   const nutRowPair = (a, b) => [{lb:"Kcal",v:pn.kc,f:"kcal"},{lb:"Vit C",v:pn.vc,f:"vitC"},{lb:"Eisen",v:pn.fe,f:"iron"},{lb:"Calcium",v:pn.ca,f:"calcium"}].map(n => {
     const pa=pct(n.v,a[n.f]), pb=pct(n.v,b[n.f]);
     return `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>${a.name} ${pa}% ${b.name} ${pb}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pb}%;height:100%;background:${bc(pb)};border-radius:4px"></div></div></div></div>`;
@@ -812,12 +922,23 @@ function rPlan() {
 // STERNE
 function awardS(kid, s, n) {
   W.stars[kid]=(W.stars[kid]||0)+s; W.total[kid]=(W.total[kid]||0)+s;
-  W.hist.push({kid,n,s,type:"award"}); if(W.hist.length>20)W.hist.shift();
+  W.hist.push({kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
   sv(); rSterne();
 }
 function redeemR(kid, s, n) {
   if ((W.stars[kid]||0)<s) return;
-  W.stars[kid]-=s; W.hist.push({kid,n,s,type:"redeem"}); sv(); rSterne();
+  W.stars[kid]-=s; W.hist.push({kid,n,s,type:"redeem",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
+  sv(); rSterne();
+}
+function getStarsTrend(kid, days) {
+  const out = [];
+  for (let i=days-1; i>=0; i--) {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+    const dk = isoDate(d);
+    const net = (W.hist||[]).filter(e => e.kid===kid && e.date===dk).reduce((a,e) => a + (e.type==="award"?e.s:-e.s), 0);
+    out.push({date:d, net});
+  }
+  return out;
 }
 function confirmReq(id) {
   const r=(W.reqs||[]).find(x=>x.id===id); if(!r)return; r.status="confirmed"; awardS(r.kid,r.s,r.tn);
@@ -864,6 +985,15 @@ function rSterne() {
   }
   // Stars display
   h += `<div class="card"><div style="text-align:center;padding:8px 0"><div style="font-size:52px;font-weight:900;color:#f57f17;line-height:1">${st}</div><div style="font-size:12px;color:var(--t2);margin-top:2px">Sterne (gesamt: ${tot})</div></div></div>`;
+  // Verlauf letzte 7 Tage
+  const trend = getStarsTrend(kid, 7);
+  const maxNet = Math.max(1, ...trend.map(t=>t.net));
+  h += `<div class="card"><div class="ct">Verlauf letzte 7 Tage</div><div style="display:flex;gap:4px">`
+    + trend.map(t => {
+      const pc2 = Math.max(6, Math.round((Math.max(0,t.net)/maxNet)*100));
+      return `<div style="flex:1;text-align:center"><div style="font-size:9px;color:var(--t2);margin-bottom:2px">${t.net}</div><div style="height:28px;display:flex;align-items:flex-end"><div style="width:100%;height:${pc2}%;background:linear-gradient(180deg,#ff9800,#f57f17);border-radius:3px 3px 0 0"></div></div><div style="font-size:8px;color:var(--t3);margin-top:2px">${DAYS[(t.date.getDay()+6)%7]}</div></div>`;
+    }).join("")
+    + `</div></div>`;
   // Next reward
   const nr=W.rew.filter(r=>r.s>st).sort((a,b)=>a.s-b.s)[0];
   if (nr) {
@@ -967,7 +1097,7 @@ function rTermine() {
   const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day));
   const dr=W.rec.filter(r=>r.day===d);
   const de=W.apts.filter(a=>a.date ? (a.date===viewIso && a.day===d) : a.day===d);
-  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
+  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button data-export-ics="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Kalender</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (W.showAF) {
     h += `<div class="card"><div class="ct">Neuer Termin</div>`
       + `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="natOnce" data-toggle-once="1"><label for="natOnce" style="font-size:11px;color:var(--t2)">Einmalig an festem Datum (statt jede Woche)</label></div>`
