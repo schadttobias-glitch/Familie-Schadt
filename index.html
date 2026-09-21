@@ -66,10 +66,10 @@ input,select,textarea{font-family:inherit}
   <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-bottom:32px">Wer bist du?</div>
   <div style="display:flex;gap:10px;width:100%;max-width:320px;margin-bottom:12px">
     <button class="profbtn" style="background:linear-gradient(135deg,#1565c0,#42a5f5);color:white" data-goto-eltern="1">
-      <span style="font-size:36px">&#129492;</span>Tobi
+      <span style="font-size:36px">&#129492;</span><span id="parent-name-tobi">Tobi</span>
     </button>
     <button class="profbtn" style="background:linear-gradient(135deg,#ad1457,#f06292);color:white" data-goto-eltern="1">
-      <span style="font-size:36px">&#128105;</span>Eva
+      <span style="font-size:36px">&#128105;</span><span id="parent-name-eva">Eva</span>
     </button>
   </div>
   <div style="display:flex;gap:10px;width:100%;max-width:320px">
@@ -282,6 +282,10 @@ let W = {
     {id:"alia", name:"Alia", emoji:"\u{1F467}", age:7, kcal:1400, vitC:70, iron:10, calcium:900},
     {id:"tiana", name:"Tiana", emoji:"\u{1F91A}", age:4, kcal:1200, vitC:60, iron:8, calcium:700},
   ],
+  parents:[
+    {id:"tobi", name:"Tobi", emoji:"\u{1F468}", kcal:2400, vitC:95, iron:10, calcium:1000},
+    {id:"eva", name:"Eva", emoji:"\u{1F469}", kcal:2000, vitC:95, iron:15, calcium:1000},
+  ],
 };
 
 const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} };
@@ -406,7 +410,7 @@ function getPlanIngredients() {
 
 // UTILITIES: Dark Mode, Backup, Teilen
 function applyDark() { document.body.classList.toggle("dark", !!W.dark); }
-function kidById(id) { return W.kids.find(k => k.id===id) || {name:id, emoji:"", age:null, kcal:0, vitC:0, iron:0, calcium:0}; }
+function kidById(id) { return [...W.kids, ...(W.parents||[])].find(k => k.id===id) || {name:id, emoji:"", age:null, kcal:0, vitC:0, iron:0, calcium:0}; }
 function kidName(id) { return kidById(id).name; }
 function esc(s) { return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function renderHeader() {
@@ -414,23 +418,38 @@ function renderHeader() {
   if (fn1) fn1.textContent = W.familyName || "Familie Schadt";
   if (fn2) fn2.textContent = W.familyName || "Familie Schadt";
   if (fm) fm.textContent = W.familyMembers || "";
-  W.kids.forEach(k => { const el = document.getElementById("kid-name-"+k.id); if (el) el.textContent = k.name; });
+  [...W.kids, ...(W.parents||[])].forEach(k => {
+    const el1 = document.getElementById("kid-name-"+k.id), el2 = document.getElementById("parent-name-"+k.id);
+    if (el1) el1.textContent = k.name;
+    if (el2) el2.textContent = k.name;
+  });
 }
 function saveFamily() {
   W.familyName = document.getElementById("setFn")?.value.trim() || "Familie Schadt";
   W.familyMembers = document.getElementById("setFm")?.value.trim();
   sv(); renderHeader();
 }
-function saveKid(id) {
-  const k = kidById(id);
+function savePerson(group, id) {
+  const k = W[group].find(x => x.id===id);
+  if (!k) return;
   k.name = document.getElementById("kn_"+id)?.value.trim() || k.name;
   k.emoji = document.getElementById("ke_"+id)?.value.trim() || k.emoji;
-  k.age = Number(document.getElementById("ka_"+id)?.value) || k.age;
+  if (document.getElementById("ka_"+id)) k.age = Number(document.getElementById("ka_"+id).value) || k.age;
   k.kcal = Number(document.getElementById("kk_"+id)?.value) || k.kcal;
   k.vitC = Number(document.getElementById("kv_"+id)?.value) || k.vitC;
   k.iron = Number(document.getElementById("ki_"+id)?.value) || k.iron;
   k.calcium = Number(document.getElementById("kc_"+id)?.value) || k.calcium;
   sv(); renderHeader(); rEinstellungen();
+}
+function personCard(k, ageField) {
+  return `<div class="card"><div class="ct">${esc(k.emoji)} ${esc(k.name)} - Profil</div>`
+    + `<div style="display:flex;gap:6px"><input id="kn_${k.id}" class="fi" value="${esc(k.name)}" placeholder="Name"><input id="ke_${k.id}" class="fi" style="max-width:70px" value="${esc(k.emoji)}" placeholder="Emoji">`
+    + (ageField ? `<input id="ka_${k.id}" type="number" class="fi" style="max-width:70px" value="${k.age||""}" placeholder="Alter">` : ``)
+    + `</div>`
+    + `<div style="font-size:10px;color:var(--t3);margin:6px 0 4px">Tages-Zielwerte (Richtwerte, keine medizinische Beratung - siehe Hinweis unten)</div>`
+    + `<div style="display:flex;gap:6px"><input id="kk_${k.id}" type="number" class="fi" value="${k.kcal}" placeholder="Kalorien"><input id="kv_${k.id}" type="number" class="fi" value="${k.vitC}" placeholder="Vit C mg"></div>`
+    + `<div style="display:flex;gap:6px"><input id="ki_${k.id}" type="number" class="fi" value="${k.iron}" placeholder="Eisen mg"><input id="kc_${k.id}" type="number" class="fi" value="${k.calcium}" placeholder="Calcium mg"></div>`
+    + `<button data-save-person="${k.id}" data-group="${k.id==="alia"||k.id==="tiana"?"kids":"parents"}" class="sb">Speichern</button></div>`;
 }
 function rEinstellungen() {
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Einstellungen</div>`;
@@ -438,17 +457,13 @@ function rEinstellungen() {
     + `<input id="setFn" class="fi" value="${esc(W.familyName)}" placeholder="Familienname">`
     + `<input id="setFm" class="fi" value="${esc(W.familyMembers)}" placeholder="Mitglieder-Zeile">`
     + `<button data-save-family="1" class="sb">Speichern</button></div>`;
-  W.kids.forEach(k => {
-    h += `<div class="card"><div class="ct">${esc(k.emoji)} ${esc(k.name)} - Profil</div>`
-      + `<div style="display:flex;gap:6px"><input id="kn_${k.id}" class="fi" value="${esc(k.name)}" placeholder="Name"><input id="ke_${k.id}" class="fi" style="max-width:70px" value="${esc(k.emoji)}" placeholder="Emoji"><input id="ka_${k.id}" type="number" class="fi" style="max-width:70px" value="${k.age||""}" placeholder="Alter"></div>`
-      + `<div style="font-size:10px;color:var(--t3);margin:6px 0 4px">Tages-Zielwerte (Richtwerte, keine medizinische Beratung - siehe Hinweis unten)</div>`
-      + `<div style="display:flex;gap:6px"><input id="kk_${k.id}" type="number" class="fi" value="${k.kcal}" placeholder="Kalorien"><input id="kv_${k.id}" type="number" class="fi" value="${k.vitC}" placeholder="Vit C mg"></div>`
-      + `<div style="display:flex;gap:6px"><input id="ki_${k.id}" type="number" class="fi" value="${k.iron}" placeholder="Eisen mg"><input id="kc_${k.id}" type="number" class="fi" value="${k.calcium}" placeholder="Calcium mg"></div>`
-      + `<button data-save-kid="${k.id}" class="sb">Speichern</button></div>`;
-  });
-  h += `<div class="card"><div class="ct">Zur Einordnung: DGE-Referenzwerte</div>`
-    + `<div style="font-size:12px;color:var(--t2);line-height:1.6">Calcium laut Deutscher Gesellschaft fuer Ernaehrung: <b>750mg</b> (4-6 Jahre), <b>1100mg</b> (10-12 Jahre) - diese beiden Werte sind bestaetigt. Fuer Kalorien, Vitamin C und Eisen sowie die Altersgruppe 7-9 Jahre konnte ich ueber die verfuegbaren Quellen keine vollstaendig verlaesslichen Zahlen bestaetigen.</div>`
-    + `<div style="font-size:11px;color:var(--t3);margin-top:8px">Für exakte, altersgenaue Empfehlungen: <a href="https://www.dge.de/wissenschaft/referenzwerte-tool/" target="_blank" rel="noopener" style="color:#764ba2">DGE-Referenzwerte-Tool</a> oder Kinderarzt/Kinderärztin fragen. Die oben eingetragenen Werte sind bewusst frei änderbar.</div>`
+  h += `<div style="color:white;font-weight:800;font-size:13px;margin:10px 0 6px">Eltern</div>`;
+  W.parents.forEach(k => { h += personCard(k, false); });
+  h += `<div style="color:white;font-weight:800;font-size:13px;margin:10px 0 6px">Kinder</div>`;
+  W.kids.forEach(k => { h += personCard(k, true); });
+  h += `<div class="card"><div class="ct">Zur Einordnung: Referenzwerte</div>`
+    + `<div style="font-size:12px;color:var(--t2);line-height:1.6">Fuer Kinder laut Deutscher Gesellschaft fuer Ernaehrung (DGE) bestaetigt: Calcium <b>750mg</b> (4-6 Jahre), <b>1100mg</b> (10-12 Jahre). Fuer Erwachsene sind die eingetragenen Werte gaengige Richtgroessen (z.B. Calcium 1000mg), aber der individuelle Bedarf haengt stark von Koerpergroesse und Aktivitaet ab. Fuer Kalorien, Vitamin C und Eisen sowie die Altersgruppe 7-9 Jahre konnte ich ueber die verfuegbaren Quellen keine vollstaendig verlaesslichen Zahlen bestaetigen.</div>`
+    + `<div style="font-size:11px;color:var(--t3);margin-top:8px">Für exakte, personenbezogene Empfehlungen: <a href="https://www.dge.de/wissenschaft/referenzwerte-tool/" target="_blank" rel="noopener" style="color:#764ba2">DGE-Referenzwerte-Tool</a> oder Arzt/Ärztin fragen. Alle Werte oben sind bewusst frei änderbar.</div>`
     + `</div>`;
   document.getElementById("t-einstellungen").innerHTML = h;
 }
@@ -586,8 +601,8 @@ document.addEventListener("click", function(e) {
   }
   const sf2 = e.target.closest("[data-save-family]");
   if (sf2) { saveFamily(); return; }
-  const sk2 = e.target.closest("[data-save-kid]");
-  if (sk2) { saveKid(sk2.dataset.saveKid); return; }
+  const sk2 = e.target.closest("[data-save-person]");
+  if (sk2) { savePerson(sk2.dataset.group, sk2.dataset.savePerson); return; }
   const pbtn = e.target.closest("[data-portion]");
   if (pbtn) {
     const [di, slot] = pbtn.dataset.portion.split("-");
@@ -745,13 +760,16 @@ function rPlan() {
   const p=PLAN[W.day], pn=pN(W.day);
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-share-plan="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (p.note) h += `<div style="background:rgba(255,255,255,0.22);border-radius:10px;padding:6px 11px;color:white;font-weight:700;font-size:11px;margin-bottom:7px">${p.note}</div>`;
-  const k0=W.kids[0], k1=W.kids[1];
-  h += `<div class="card"><div class="ct">Kinder-Naehrwerte heute</div>`;
-  [{lb:"Kcal",v:pn.kc,f:"kcal"},{lb:"Vit C",v:pn.vc,f:"vitC"},{lb:"Eisen",v:pn.fe,f:"iron"},{lb:"Calcium",v:pn.ca,f:"calcium"}].forEach(n => {
-    const pa=pct(n.v,k0[n.f]), pt=pct(n.v,k1[n.f]);
-    h += `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>${k0.name} ${pa}% ${k1.name} ${pt}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pt}%;height:100%;background:${bc(pt)};border-radius:4px"></div></div></div></div>`;
-  });
-  h += `</div>`;
+  const nutRowPair = (a, b) => [{lb:"Kcal",v:pn.kc,f:"kcal"},{lb:"Vit C",v:pn.vc,f:"vitC"},{lb:"Eisen",v:pn.fe,f:"iron"},{lb:"Calcium",v:pn.ca,f:"calcium"}].map(n => {
+    const pa=pct(n.v,a[n.f]), pb=pct(n.v,b[n.f]);
+    return `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>${a.name} ${pa}% ${b.name} ${pb}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pb}%;height:100%;background:${bc(pb)};border-radius:4px"></div></div></div></div>`;
+  }).join("");
+  h += `<div class="card"><div class="ct">Naehrwerte heute</div>`
+    + `<div style="font-size:9px;font-weight:800;color:var(--t3);letter-spacing:0.5px;margin-bottom:3px">KINDER</div>`
+    + nutRowPair(W.kids[0], W.kids[1])
+    + `<div style="font-size:9px;font-weight:800;color:var(--t3);letter-spacing:0.5px;margin:8px 0 3px">ELTERN</div>`
+    + nutRowPair(W.parents[0], W.parents[1])
+    + `</div>`;
   [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
     const key = W.day+"-"+slot, meal = getMeal(W.day, slot), kat = SLOT_KAT[slot];
     h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${meal.n}</div></div><button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div>`;
