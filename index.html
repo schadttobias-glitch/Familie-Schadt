@@ -441,21 +441,25 @@ function savePerson(group, id) {
   k.calcium = Number(document.getElementById("kc_"+id)?.value) || k.calcium;
   sv(); renderHeader(); rEinstellungen();
 }
+function fieldBlock(label, inputHtml) {
+  return `<div style="flex:1;min-width:0"><div style="font-size:9px;font-weight:700;color:var(--t3);margin-bottom:2px">${label}</div>${inputHtml}</div>`;
+}
 function personCard(k, ageField) {
+  const nameF = fieldBlock("Name", `<input id="kn_${k.id}" class="fi" style="margin-bottom:0" value="${esc(k.name)}">`);
+  const emojiF = fieldBlock("Emoji", `<input id="ke_${k.id}" class="fi" style="margin-bottom:0" value="${esc(k.emoji)}">`);
+  const ageF = ageField ? fieldBlock("Alter", `<input id="ka_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.age||""}">`) : ``;
   return `<div class="card"><div class="ct">${esc(k.emoji)} ${esc(k.name)} - Profil</div>`
-    + `<div style="display:flex;gap:6px"><input id="kn_${k.id}" class="fi" value="${esc(k.name)}" placeholder="Name"><input id="ke_${k.id}" class="fi" style="max-width:70px" value="${esc(k.emoji)}" placeholder="Emoji">`
-    + (ageField ? `<input id="ka_${k.id}" type="number" class="fi" style="max-width:70px" value="${k.age||""}" placeholder="Alter">` : ``)
-    + `</div>`
-    + `<div style="font-size:10px;color:var(--t3);margin:6px 0 4px">Tages-Zielwerte (Richtwerte, keine medizinische Beratung - siehe Hinweis unten)</div>`
-    + `<div style="display:flex;gap:6px"><input id="kk_${k.id}" type="number" class="fi" value="${k.kcal}" placeholder="Kalorien"><input id="kv_${k.id}" type="number" class="fi" value="${k.vitC}" placeholder="Vit C mg"></div>`
-    + `<div style="display:flex;gap:6px"><input id="ki_${k.id}" type="number" class="fi" value="${k.iron}" placeholder="Eisen mg"><input id="kc_${k.id}" type="number" class="fi" value="${k.calcium}" placeholder="Calcium mg"></div>`
+    + `<div style="display:flex;gap:6px;margin-bottom:8px">${nameF}${emojiF}${ageF}</div>`
+    + `<div style="font-size:10px;color:var(--t3);margin-bottom:6px">Tages-Zielwerte (Richtwerte, keine medizinische Beratung - siehe Hinweis unten)</div>`
+    + `<div style="display:flex;gap:6px;margin-bottom:6px">${fieldBlock("Kalorien (kcal)", `<input id="kk_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.kcal}">`)}${fieldBlock("Vitamin C (mg)", `<input id="kv_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.vitC}">`)}</div>`
+    + `<div style="display:flex;gap:6px;margin-bottom:8px">${fieldBlock("Eisen (mg)", `<input id="ki_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.iron}">`)}${fieldBlock("Calcium (mg)", `<input id="kc_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.calcium}">`)}</div>`
     + `<button data-save-person="${k.id}" data-group="${k.id==="alia"||k.id==="tiana"?"kids":"parents"}" class="sb">Speichern</button></div>`;
 }
 function rEinstellungen() {
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Einstellungen</div>`;
   h += `<div class="card"><div class="ct">Familie</div>`
-    + `<input id="setFn" class="fi" value="${esc(W.familyName)}" placeholder="Familienname">`
-    + `<input id="setFm" class="fi" value="${esc(W.familyMembers)}" placeholder="Mitglieder-Zeile">`
+    + `<div style="margin-bottom:8px">${fieldBlock("Familienname", `<input id="setFn" class="fi" style="margin-bottom:0" value="${esc(W.familyName)}">`)}</div>`
+    + `<div style="margin-bottom:8px">${fieldBlock("Mitglieder-Zeile (unter dem Familiennamen)", `<input id="setFm" class="fi" style="margin-bottom:0" value="${esc(W.familyMembers)}">`)}</div>`
     + `<button data-save-family="1" class="sb">Speichern</button></div>`;
   h += `<div style="color:white;font-weight:800;font-size:13px;margin:10px 0 6px">Eltern</div>`;
   W.parents.forEach(k => { h += personCard(k, false); });
