@@ -62,7 +62,7 @@ input,select,textarea{font-family:inherit}
 <!-- START SCREEN -->
 <div id="scr-start" class="screen" style="background:linear-gradient(135deg,#667eea,#764ba2);flex-direction:column;align-items:center;justify-content:center;padding:24px;display:flex">
   <div style="font-size:52px;margin-bottom:8px">&#127807;</div>
-  <div style="color:white;font-size:24px;font-weight:900;margin-bottom:4px">Familie Schadt</div>
+  <div id="fam-name-start" style="color:white;font-size:24px;font-weight:900;margin-bottom:4px">Familie Schadt</div>
   <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-bottom:32px">Wer bist du?</div>
   <div style="display:flex;gap:10px;width:100%;max-width:320px;margin-bottom:12px">
     <button class="profbtn" style="background:linear-gradient(135deg,#1565c0,#42a5f5);color:white" data-goto-eltern="1">
@@ -74,10 +74,10 @@ input,select,textarea{font-family:inherit}
   </div>
   <div style="display:flex;gap:10px;width:100%;max-width:320px">
     <button class="profbtn" style="background:linear-gradient(135deg,#ff6b6b,#feca57);color:#333" data-goto-kind="alia">
-      <span style="font-size:36px">&#128103;</span>Alia
+      <span style="font-size:36px">&#128103;</span><span id="kid-name-alia">Alia</span>
     </button>
     <button class="profbtn" style="background:linear-gradient(135deg,#48dbfb,#ff9ff3);color:#333" data-goto-kind="tiana">
-      <span style="font-size:36px">&#129306;</span>Tiana
+      <span style="font-size:36px">&#129306;</span><span id="kid-name-tiana">Tiana</span>
     </button>
   </div>
 </div>
@@ -108,8 +108,8 @@ input,select,textarea{font-family:inherit}
 <div id="scr-app" class="screen" style="background:linear-gradient(135deg,#667eea,#764ba2);padding-bottom:70px">
   <div style="background:rgba(255,255,255,0.18);padding:13px 12px 10px;color:white;display:flex;justify-content:space-between;align-items:center">
     <div>
-      <div style="font-size:17px;font-weight:900">&#127807; Familie Schadt</div>
-      <div style="font-size:11px;opacity:.85;margin-top:1px">&#129492; Tobi &middot; &#128105; Eva &middot; &#128103; Alia &middot; &#129306; Tiana</div>
+      <div style="font-size:17px;font-weight:900">&#127807; <span id="fam-name-app">Familie Schadt</span></div>
+      <div id="fam-members-app" style="font-size:11px;opacity:.85;margin-top:1px">&#129492; Tobi &middot; &#128105; Eva &middot; &#128103; Alia &middot; &#129306; Tiana</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <div id="hbb" style="background:rgba(255,255,255,0.2);border-radius:9px;padding:4px 9px;font-size:11px;font-weight:700;color:white">Woche</div>
@@ -126,6 +126,7 @@ input,select,textarea{font-family:inherit}
     <button class="tb" data-tab="termine"><span>&#128197;</span>Termine</button>
     <button class="tb" data-tab="einkauf"><span>&#128722;</span>Einkauf</button>
     <button class="tb" data-tab="sport"><span>&#127939;</span>Sport</button>
+    <button class="tb" data-tab="einstellungen"><span>&#9881;&#65039;</span>Mehr</button>
   </div>
   <div style="padding:0 10px">
     <div id="t-plan"></div>
@@ -134,6 +135,7 @@ input,select,textarea{font-family:inherit}
     <div id="t-termine" style="display:none"></div>
     <div id="t-einkauf" style="display:none"></div>
     <div id="t-sport" style="display:none"></div>
+    <div id="t-einstellungen" style="display:none"></div>
   </div>
 </div>
 
@@ -275,6 +277,11 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
+  familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
+  kids:[
+    {id:"alia", name:"Alia", emoji:"\u{1F467}", age:7, kcal:1400, vitC:70, iron:10, calcium:900},
+    {id:"tiana", name:"Tiana", emoji:"\u{1F91A}", age:4, kcal:1200, vitC:60, iron:8, calcium:700},
+  ],
 };
 
 const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} };
@@ -372,6 +379,52 @@ function getPlanIngredients() {
 
 // UTILITIES: Dark Mode, Backup, Teilen
 function applyDark() { document.body.classList.toggle("dark", !!W.dark); }
+function kidById(id) { return W.kids.find(k => k.id===id) || {name:id, emoji:"", age:null, kcal:0, vitC:0, iron:0, calcium:0}; }
+function kidName(id) { return kidById(id).name; }
+function esc(s) { return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function renderHeader() {
+  const fn1 = document.getElementById("fam-name-start"), fn2 = document.getElementById("fam-name-app"), fm = document.getElementById("fam-members-app");
+  if (fn1) fn1.textContent = W.familyName || "Familie Schadt";
+  if (fn2) fn2.textContent = W.familyName || "Familie Schadt";
+  if (fm) fm.textContent = W.familyMembers || "";
+  W.kids.forEach(k => { const el = document.getElementById("kid-name-"+k.id); if (el) el.textContent = k.name; });
+}
+function saveFamily() {
+  W.familyName = document.getElementById("setFn")?.value.trim() || "Familie Schadt";
+  W.familyMembers = document.getElementById("setFm")?.value.trim();
+  sv(); renderHeader();
+}
+function saveKid(id) {
+  const k = kidById(id);
+  k.name = document.getElementById("kn_"+id)?.value.trim() || k.name;
+  k.emoji = document.getElementById("ke_"+id)?.value.trim() || k.emoji;
+  k.age = Number(document.getElementById("ka_"+id)?.value) || k.age;
+  k.kcal = Number(document.getElementById("kk_"+id)?.value) || k.kcal;
+  k.vitC = Number(document.getElementById("kv_"+id)?.value) || k.vitC;
+  k.iron = Number(document.getElementById("ki_"+id)?.value) || k.iron;
+  k.calcium = Number(document.getElementById("kc_"+id)?.value) || k.calcium;
+  sv(); renderHeader(); rEinstellungen();
+}
+function rEinstellungen() {
+  let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Einstellungen</div>`;
+  h += `<div class="card"><div class="ct">Familie</div>`
+    + `<input id="setFn" class="fi" value="${esc(W.familyName)}" placeholder="Familienname">`
+    + `<input id="setFm" class="fi" value="${esc(W.familyMembers)}" placeholder="Mitglieder-Zeile">`
+    + `<button data-save-family="1" class="sb">Speichern</button></div>`;
+  W.kids.forEach(k => {
+    h += `<div class="card"><div class="ct">${esc(k.emoji)} ${esc(k.name)} - Profil</div>`
+      + `<div style="display:flex;gap:6px"><input id="kn_${k.id}" class="fi" value="${esc(k.name)}" placeholder="Name"><input id="ke_${k.id}" class="fi" style="max-width:70px" value="${esc(k.emoji)}" placeholder="Emoji"><input id="ka_${k.id}" type="number" class="fi" style="max-width:70px" value="${k.age||""}" placeholder="Alter"></div>`
+      + `<div style="font-size:10px;color:var(--t3);margin:6px 0 4px">Tages-Zielwerte (Richtwerte, keine medizinische Beratung - siehe Hinweis unten)</div>`
+      + `<div style="display:flex;gap:6px"><input id="kk_${k.id}" type="number" class="fi" value="${k.kcal}" placeholder="Kalorien"><input id="kv_${k.id}" type="number" class="fi" value="${k.vitC}" placeholder="Vit C mg"></div>`
+      + `<div style="display:flex;gap:6px"><input id="ki_${k.id}" type="number" class="fi" value="${k.iron}" placeholder="Eisen mg"><input id="kc_${k.id}" type="number" class="fi" value="${k.calcium}" placeholder="Calcium mg"></div>`
+      + `<button data-save-kid="${k.id}" class="sb">Speichern</button></div>`;
+  });
+  h += `<div class="card"><div class="ct">Zur Einordnung: DGE-Referenzwerte</div>`
+    + `<div style="font-size:12px;color:var(--t2);line-height:1.6">Calcium laut Deutscher Gesellschaft fuer Ernaehrung: <b>750mg</b> (4-6 Jahre), <b>1100mg</b> (10-12 Jahre) - diese beiden Werte sind bestaetigt. Fuer Kalorien, Vitamin C und Eisen sowie die Altersgruppe 7-9 Jahre konnte ich ueber die verfuegbaren Quellen keine vollstaendig verlaesslichen Zahlen bestaetigen.</div>`
+    + `<div style="font-size:11px;color:var(--t3);margin-top:8px">Für exakte, altersgenaue Empfehlungen: <a href="https://www.dge.de/wissenschaft/referenzwerte-tool/" target="_blank" rel="noopener" style="color:#764ba2">DGE-Referenzwerte-Tool</a> oder Kinderarzt/Kinderärztin fragen. Die oben eingetragenen Werte sind bewusst frei änderbar.</div>`
+    + `</div>`;
+  document.getElementById("t-einstellungen").innerHTML = h;
+}
 function exportBackup() {
   const blob = new Blob([JSON.stringify(W,null,2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -504,6 +557,10 @@ document.addEventListener("click", function(e) {
     if (dw && dd) { const once = onceChk.checked; dw.style.display = once?"none":"flex"; dd.style.display = once?"flex":"none"; }
     return;
   }
+  const sf2 = e.target.closest("[data-save-family]");
+  if (sf2) { saveFamily(); return; }
+  const sk2 = e.target.closest("[data-save-kid]");
+  if (sk2) { saveKid(sk2.dataset.saveKid); return; }
 });
 document.addEventListener("change", function(e) {
   const ms = e.target.closest("[data-meal-select]");
@@ -551,12 +608,12 @@ function updateKTabs() {
   });
 }
 function renderKids() {
-  const kid=W.sk, isA=kid==="alia", name=isA?"Alia":"Tiana";
+  const kid=W.sk, isA=kid==="alia", name=kidName(kid);
   const bg=isA?"linear-gradient(135deg,#ff6b6b,#feca57,#48dbfb)":"linear-gradient(135deg,#ff9ff3,#feca57,#48dbfb)";
   const st=W.stars[kid]||0, tasks=W.tasks[kid]||[];
   const p = PLAN[W.day];
   let h = `<div style="min-height:100vh;background:${bg};padding:16px 14px 90px">`;
-  h += `<div style="text-align:center;padding:12px 0 16px"><div style="font-size:44px">${isA?"&#128103;":"&#129306;"}</div><div style="font-size:24px;font-weight:900;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2)">Hallo ${name}!</div></div>`;
+  h += `<div style="text-align:center;padding:12px 0 16px"><div style="font-size:44px">${kidById(kid).emoji}</div><div style="font-size:24px;font-weight:900;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2)">Hallo ${name}!</div></div>`;
 
   if (W.ktab==="s") {
     h += `<div style="background:rgba(255,255,255,0.92);border-radius:22px;padding:20px;text-align:center;margin-bottom:12px;box-shadow:0 8px 25px rgba(0,0,0,0.15)">`;
@@ -632,7 +689,7 @@ function rWeekNav() {
 function setTab(name) {
   W.tab = name; sv();
   document.querySelectorAll("[data-tab]").forEach(b => { b.classList.toggle("on", b.dataset.tab===name); });
-  ["plan","sterne","schule","termine","einkauf","sport"].forEach(t => {
+  ["plan","sterne","schule","termine","einkauf","sport","einstellungen"].forEach(t => {
     const el = document.getElementById("t-"+t);
     if (el) el.style.display = t===name?"block":"none";
   });
@@ -646,6 +703,7 @@ function renderCurrent() {
   else if (W.tab==="termine") rTermine();
   else if (W.tab==="einkauf") rEinkauf();
   else if (W.tab==="sport") rSport();
+  else if (W.tab==="einstellungen") rEinstellungen();
 }
 
 // PLAN
@@ -653,10 +711,11 @@ function rPlan() {
   const p=PLAN[W.day], pn=pN(W.day);
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-share-plan="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (p.note) h += `<div style="background:rgba(255,255,255,0.22);border-radius:10px;padding:6px 11px;color:white;font-weight:700;font-size:11px;margin-bottom:7px">${p.note}</div>`;
+  const k0=W.kids[0], k1=W.kids[1];
   h += `<div class="card"><div class="ct">Kinder-Naehrwerte heute</div>`;
-  [{lb:"Kcal",v:pn.kc,aT:1400,tT:1200},{lb:"Vit C",v:pn.vc,aT:70,tT:60},{lb:"Eisen",v:pn.fe,aT:10,tT:8},{lb:"Calcium",v:pn.ca,aT:900,tT:700}].forEach(n => {
-    const pa=pct(n.v,n.aT), pt=pct(n.v,n.tT);
-    h += `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>Alia ${pa}% Tiana ${pt}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pt}%;height:100%;background:${bc(pt)};border-radius:4px"></div></div></div></div>`;
+  [{lb:"Kcal",v:pn.kc,f:"kcal"},{lb:"Vit C",v:pn.vc,f:"vitC"},{lb:"Eisen",v:pn.fe,f:"iron"},{lb:"Calcium",v:pn.ca,f:"calcium"}].forEach(n => {
+    const pa=pct(n.v,k0[n.f]), pt=pct(n.v,k1[n.f]);
+    h += `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>${k0.name} ${pa}% ${k1.name} ${pt}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pt}%;height:100%;background:${bc(pt)};border-radius:4px"></div></div></div></div>`;
   });
   h += `</div>`;
   [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
@@ -722,7 +781,7 @@ function rSterne() {
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Belohnungssystem</div>`;
   // Kid selector
   h += `<div style="display:flex;gap:7px;margin-bottom:8px"><div style="display:flex;background:rgba(255,255,255,0.15);border-radius:11px;padding:3px;gap:2px;flex:1">`;
-  [{id:"alia",n:"Alia"},{id:"tiana",n:"Tiana"}].forEach(k => {
+  W.kids.map(k=>({id:k.id,n:k.name})).forEach(k => {
     const on=kid===k.id;
     h += `<button data-award="${k.id}" style="flex:1;padding:6px;border-radius:8px;border:none;background:${on?"white":"transparent"};color:${on?"#764ba2":"white"};font-weight:800;font-size:12px;cursor:pointer" onclick="W.sk='${k.id}';sv();rSterne()">${k.n}</button>`;
   });
@@ -730,7 +789,7 @@ function rSterne() {
   // Pending requests
   const pend=(W.reqs||[]).filter(r=>r.kid===kid&&r.status==="pending");
   if (pend.length) {
-    h += `<div class="card" style="border-left:4px solid #ff9800"><div class="ct" style="color:#e65100">Anfragen von ${kid==="alia"?"Alia":"Tiana"} (${pend.length})</div>`;
+    h += `<div class="card" style="border-left:4px solid #ff9800"><div class="ct" style="color:#e65100">Anfragen von ${kidName(kid)} (${pend.length})</div>`;
     pend.forEach(r => {
       h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2)"><div style="font-size:12px;font-weight:600">${r.tn} (${r.s} Sterne)</div><div style="display:flex;gap:5px"><button data-confirm-req="${r.id}" style="background:#4caf50;color:white;border:none;border-radius:7px;padding:5px 9px;font-weight:800;font-size:11px;cursor:pointer">OK</button><button data-reject-req="${r.id}" style="background:#ffebee;color:#f44336;border:none;border-radius:7px;padding:5px 9px;font-weight:800;font-size:11px;cursor:pointer">Nein</button></div></div>`;
     });
@@ -774,7 +833,7 @@ function rSterne() {
   if (W.hist.length) {
     h += `<div class="card"><div class="ct">Letzte Aktivitaeten</div>`;
     W.hist.slice(-5).reverse().forEach(e => {
-      h += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd2);font-size:12px"><span>${e.kid==="alia"?"Alia":"Tiana"}: ${e.n}</span><span style="color:${e.type==="award"?"#4caf50":"#f44336"};font-weight:700">${e.type==="award"?"+":"-"}${e.s}</span></div>`;
+      h += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd2);font-size:12px"><span>${kidName(e.kid)}: ${e.n}</span><span style="color:${e.type==="award"?"#4caf50":"#f44336"};font-weight:700">${e.type==="award"?"+":"-"}${e.s}</span></div>`;
     });
     h += `</div>`;
   }
@@ -940,6 +999,7 @@ function rSport() {
 // INIT
 ld();
 migrateMealOv();
+renderHeader();
 showScr("start");
 </script>
 </body>
