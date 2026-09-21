@@ -277,7 +277,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
-  planTemplates:{}, showTpl:false,
+  planTemplates:{}, showTpl:false, mealRatings:{},
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -315,6 +315,17 @@ function viewMonday() { const m=mondayOf(new Date()); m.setDate(m.getDate()+W.we
 function viewDate(dayIndex) { const d=new Date(viewMonday()); d.setDate(d.getDate()+dayIndex); return d; }
 function curWeekKey() { return weekKey(viewMonday()); }
 function fmtDshort(d) { return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; }
+function recOccursOn(item, date) {
+  if (item.freq === "monthly") return date.getDate() === (item.dayOfMonth || 1);
+  const dayName = DAYS[(date.getDay()+6)%7];
+  if (item.day !== dayName) return false;
+  if (item.freq === "biweekly") {
+    const anchor = item.startWeek || weekKey(date);
+    const diffWeeks = Math.round((new Date(weekKey(date)) - new Date(anchor)) / (7*86400000));
+    return ((diffWeeks % 2) + 2) % 2 === 0;
+  }
+  return true;
+}
 function migrateMealOv() {
   if (W.mealOv && Object.keys(W.mealOv).length) {
     const wk = weekKey(new Date());
@@ -427,13 +438,26 @@ function deleteTemplate(name) {
   if (W.planTemplates) delete W.planTemplates[name];
   sv(); rPlan();
 }
+function isDislikedRecipe(id) {
+  const rt = (W.mealRatings||{})[id]; return !!rt && rt.down > rt.up;
+}
+function rateMeal(rid, dir) {
+  if (!rid) return;
+  if (!W.mealRatings) W.mealRatings = {};
+  const cur = W.mealRatings[rid] || {up:0, down:0};
+  cur[dir] = (cur[dir]||0) + 1;
+  W.mealRatings[rid] = cur;
+  sv(); rPlan();
+}
 function fillWeekRandom() {
-  if (!confirm("Ersetzt die Rezeptauswahl fuer die gesamte angezeigte Woche mit einem zufaelligen, abwechslungsreichen Plan. Fortfahren?")) return;
+  if (!confirm("Ersetzt die Rezeptauswahl fuer die gesamte angezeigte Woche mit einem zufaelligen, abwechslungsreichen Plan. Unbeliebte Gerichte (mehr Daumen runter als hoch) werden vermieden. Fortfahren?")) return;
   const wk = curWeekKey();
   if (!W.weekOv[wk]) W.weekOv[wk] = {};
   ["f","m","a","s"].forEach(slot => {
     const kat = SLOT_KAT[slot];
-    const pool = [...(RECIPES[kat] ? RECIPES[kat].items : [])];
+    const all = [...(RECIPES[kat] ? RECIPES[kat].items : [])];
+    let pool = all.filter(r => !isDislikedRecipe(r.id));
+    if (!pool.length) pool = all;
     for (let i=pool.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
     for (let di=0; di<7; di++) {
       if (!pool.length) continue;
@@ -574,6 +598,23 @@ function icsStamp(d) {
   return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+"T"+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+"Z";
 }
 function icsEscape(s) { return String(s).replace(/[\\;,]/g, m => "\\"+m).replace(/\n/g,"\\n"); }
+function freqRule(item) {
+  if (item.freq === "monthly") return "FREQ=MONTHLY;BYMONTHDAY="+(item.dayOfMonth||1);
+  if (item.freq === "biweekly") return "FREQ=WEEKLY;INTERVAL=2;BYDAY="+ICS_DAY[item.day];
+  return "FREQ=WEEKLY;BYDAY="+ICS_DAY[item.day];
+}
+function nextOccurrence(item) {
+  if (item.freq === "monthly") {
+    const now = new Date(); const dom = item.dayOfMonth||1;
+    let d = new Date(now.getFullYear(), now.getMonth(), dom);
+    if (d < now) d = new Date(now.getFullYear(), now.getMonth()+1, dom);
+    if (item.time) { const [h,m] = item.time.split(":").map(Number); d.setHours(h||0, m||0, 0, 0); } else d.setHours(9,0,0,0);
+    return d;
+  }
+  let d = nextDateForWeekday(item.day, item.time);
+  if (item.freq === "biweekly") { let guard=0; while (!recOccursOn(item, d) && guard<14) { d.setDate(d.getDate()+7); guard++; } }
+  return d;
+}
 function exportICS() {
   const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Familie Schadt//App//DE","CALSCALE:GREGORIAN"];
   const stamp = icsStamp(new Date());
@@ -589,7 +630,7 @@ function exportICS() {
     if (rrule) lines.push("RRULE:"+rrule);
     lines.push("END:VEVENT");
   };
-  W.rec.forEach(r => addEvent(r.title, nextDateForWeekday(r.day, r.time), r.who, "FREQ=WEEKLY;BYDAY="+ICS_DAY[r.day]));
+  W.rec.forEach(r => addEvent(r.title, nextOccurrence(r), r.who, freqRule(r)));
   W.apts.forEach(a => {
     if (a.date) {
       const [y,m,d] = a.date.split("-").map(Number);
@@ -597,7 +638,7 @@ function exportICS() {
       if (a.time) { const [h,mi] = a.time.split(":").map(Number); dt.setHours(h||0, mi||0); } else dt.setHours(9,0);
       addEvent(a.title, dt, a.who, null);
     } else {
-      addEvent(a.title, nextDateForWeekday(a.day, a.time), a.who, "FREQ=WEEKLY;BYDAY="+ICS_DAY[a.day]);
+      addEvent(a.title, nextOccurrence(a), a.who, freqRule(a));
     }
   });
   lines.push("END:VCALENDAR");
@@ -717,10 +758,19 @@ document.addEventListener("click", function(e) {
     setMealPortions(parseInt(di), slot, meal.portions + parseInt(pbtn.dataset.delta));
     return;
   }
+  const rtb = e.target.closest("[data-rate]");
+  if (rtb) { rateMeal(rtb.dataset.rate, rtb.dataset.dir); return; }
 });
 document.addEventListener("change", function(e) {
   const ms = e.target.closest("[data-meal-select]");
   if (ms) { onMealSelect(ms.dataset.mealSelect, ms.value); return; }
+  const fsel = e.target.closest("[data-freq-select]");
+  if (fsel) {
+    const tgt = fsel.dataset.freqSelect;
+    const wr = document.getElementById(tgt+"WeekdayRow"), mr = document.getElementById(tgt+"MonthRow");
+    if (wr && mr) { const isM = fsel.value==="monthly"; wr.style.display = isM?"none":"flex"; mr.style.display = isM?"flex":"none"; }
+    return;
+  }
 });
 
 // PIN
@@ -905,6 +955,10 @@ function rPlan() {
       }
     }
     h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div>`;
+    if (meal.rid) {
+      const rt = (W.mealRatings||{})[meal.rid] || {up:0, down:0};
+      h += `<div style="display:flex;align-items:center;gap:8px;margin-top:7px"><button data-rate="${meal.rid}" data-dir="up" style="background:var(--hb);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#4caf50;cursor:pointer">&#128077; ${rt.up}</button><button data-rate="${meal.rid}" data-dir="down" style="background:var(--hb);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#f44336;cursor:pointer">&#128078; ${rt.down}</button></div>`;
+    }
     const rcp = meal.rid ? findRecipe(meal.rid) : null;
     if (rcp && rcp.zutaten && rcp.zutaten.length) {
       const factor = meal.portions / (rcp.basePortions||4);
@@ -1082,50 +1136,77 @@ function saveApt() {
     const dv = document.getElementById("nadate")?.value; if(!dv) return;
     apt.date = dv; apt.day = DAYS[(new Date(dv+"T00:00:00").getDay()+6)%7]; apt.time = document.getElementById("nat2")?.value;
   } else {
-    apt.day = document.getElementById("nad")?.value; apt.time = document.getElementById("nat")?.value;
+    const freq = document.getElementById("naf")?.value || "weekly";
+    apt.freq = freq;
+    if (freq === "monthly") {
+      apt.dayOfMonth = Math.min(31, Math.max(1, parseInt(document.getElementById("nadom")?.value) || 1));
+      apt.time = document.getElementById("natm")?.value;
+    } else {
+      apt.day = document.getElementById("nad")?.value; apt.time = document.getElementById("nat")?.value;
+      if (freq === "biweekly") apt.startWeek = curWeekKey();
+    }
   }
   W.apts.push(apt);
   W.showAF=false; sv(); rTermine();
 }
 function saveRec(id) {
   const r=W.rec.find(x=>x.id===id); if(!r)return;
-  r.day=document.getElementById("red")?.value; r.time=document.getElementById("ret")?.value;
+  const freq = document.getElementById("ref")?.value || "weekly";
+  r.freq = freq;
   r.title=document.getElementById("reti")?.value; r.who=document.getElementById("rew2")?.value;
+  if (freq === "monthly") {
+    r.dayOfMonth = Math.min(31, Math.max(1, parseInt(document.getElementById("redom")?.value) || 1));
+    r.time = document.getElementById("retm")?.value;
+    delete r.startWeek;
+  } else {
+    r.day=document.getElementById("red")?.value; r.time=document.getElementById("ret")?.value;
+    if (freq === "biweekly") { if (!r.startWeek) r.startWeek = curWeekKey(); } else delete r.startWeek;
+  }
   W.recEdit=null; sv(); rTermine();
 }
 function rTermine() {
-  const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day));
-  const dr=W.rec.filter(r=>r.day===d);
-  const de=W.apts.filter(a=>a.date ? (a.date===viewIso && a.day===d) : a.day===d);
+  const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day)), viewDt=viewDate(W.day);
+  const dr=W.rec.filter(r=>recOccursOn(r, viewDt));
+  const de=W.apts.filter(a=>a.date ? (a.date===viewIso && a.day===d) : recOccursOn(a, viewDt));
+  const freqSelect = (id, cur) => `<select id="${id}" data-freq-select="${id}" style="padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px;margin-bottom:6px"><option value="weekly"${!cur||cur==="weekly"?" selected":""}>Jede Woche</option><option value="biweekly"${cur==="biweekly"?" selected":""}>Alle 2 Wochen</option><option value="monthly"${cur==="monthly"?" selected":""}>Jeden Monat</option></select>`;
+  const freqLabel = r => r.freq==="biweekly" ? " · alle 2 Wochen" : r.freq==="monthly" ? " · jeden Monat (Tag "+(r.dayOfMonth||1)+")" : "";
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button data-export-ics="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Kalender</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (W.showAF) {
     h += `<div class="card"><div class="ct">Neuer Termin</div>`
-      + `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="natOnce" data-toggle-once="1"><label for="natOnce" style="font-size:11px;color:var(--t2)">Einmalig an festem Datum (statt jede Woche)</label></div>`
-      + `<div id="nadWrap" style="display:flex;gap:6px;margin-bottom:6px"><select id="nad" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><input id="nat" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
+      + `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="natOnce" data-toggle-once="1"><label for="natOnce" style="font-size:11px;color:var(--t2)">Einmalig an festem Datum (statt wiederholend)</label></div>`
+      + `<div id="nadWrap">`
+      + freqSelect("naf", "weekly")
+      + `<div id="nafWeekdayRow" style="display:flex;gap:6px;margin-bottom:6px"><select id="nad" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><input id="nat" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
+      + `<div id="nafMonthRow" style="display:none;gap:6px;margin-bottom:6px"><input id="nadom" type="number" min="1" max="31" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Tag im Monat (1-31)"><input id="natm" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
+      + `</div>`
       + `<div id="nadateWrap" style="display:none;gap:6px;margin-bottom:6px"><input type="date" id="nadate" class="fi" style="margin-bottom:0;flex:1" value="${viewIso}"><input id="nat2" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
       + `<input id="nati" class="fi" placeholder="Termin"><input id="naw" class="fi" placeholder="Wer?"><button data-save-apt="1" class="sb">Speichern</button></div>`;
   }
   if (dr.length) {
-    h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;letter-spacing:1px">JEDE WOCHE (tippen = bearbeiten)</div>`;
+    h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;letter-spacing:1px">WIEDERHOLEND (tippen = bearbeiten)</div>`;
     dr.forEach(r => {
       if (W.recEdit===r.id) {
-        h += `<div class="card"><div class="ct">Bearbeiten</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="red" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===r.day?" selected":""}>${x}</option>`).join("")}</select><input id="ret" value="${r.time}" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"></div><input id="reti" value="${r.title}" class="fi"><input id="rew2" value="${r.who}" class="fi"><div style="display:flex;gap:6px"><button data-rec-save="${r.id}" class="sb" style="flex:1;margin:0">Speichern</button><button data-rec-del="${r.id}" style="flex:1;background:#ffebee;color:#f44336;border:none;border-radius:9px;padding:9px;font-weight:800;cursor:pointer">Loeschen</button></div></div>`;
+        h += `<div class="card"><div class="ct">Bearbeiten</div>`
+          + freqSelect("ref", r.freq)
+          + `<div id="refWeekdayRow" style="display:${r.freq==="monthly"?"none":"flex"};gap:6px;margin-bottom:6px"><select id="red" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===r.day?" selected":""}>${x}</option>`).join("")}</select><input id="ret" value="${r.time}" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"></div>`
+          + `<div id="refMonthRow" style="display:${r.freq==="monthly"?"flex":"none"};gap:6px;margin-bottom:6px"><input id="redom" type="number" min="1" max="31" value="${r.dayOfMonth||1}" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Tag im Monat"><input id="retm" value="${r.time||""}" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
+          + `<input id="reti" value="${r.title}" class="fi"><input id="rew2" value="${r.who}" class="fi"><div style="display:flex;gap:6px"><button data-rec-save="${r.id}" class="sb" style="flex:1;margin:0">Speichern</button><button data-rec-del="${r.id}" style="flex:1;background:#ffebee;color:#f44336;border:none;border-radius:9px;padding:9px;font-weight:800;cursor:pointer">Loeschen</button></div></div>`;
       } else {
-        h += `<div data-rec-edit="${r.id}" style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${r.color};cursor:pointer"><div style="flex:1"><div style="font-weight:800;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--t2)">${r.time} - ${r.who}</div></div><span style="font-size:10px;color:var(--t4)">&#9998;</span></div>`;
+        h += `<div data-rec-edit="${r.id}" style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${r.color};cursor:pointer"><div style="flex:1"><div style="font-weight:800;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--t2)">${r.time} - ${r.who}${freqLabel(r)}</div></div><span style="font-size:10px;color:var(--t4)">&#9998;</span></div>`;
       }
     });
   }
   if (de.length) {
     h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;margin-top:8px;letter-spacing:1px">EINMALIG</div>`;
     de.forEach(a => {
-      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?" "+a.time+" - ":""}${a.who}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
+      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?" "+a.time+" - ":""}${a.who}${a.date?"":freqLabel(a)}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
     });
   }
   if (!dr.length&&!de.length) h += `<div class="eb">Keine Termine heute</div>`;
   h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:14px;margin-bottom:7px">Ganze Woche</div><div class="card">`;
   DAYS.forEach((dd,di) => {
-    const dtI = isoDate(viewDate(di));
-    const all=[...W.rec.filter(r=>r.day===dd),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):a.day===dd)];
+    const vd=viewDate(di), dtI = isoDate(vd);
+    const all=[...W.rec.filter(r=>recOccursOn(r, vd)),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):recOccursOn(a, vd))];
     h += `<div class="wr"><div style="width:24px;font-weight:900;font-size:11px;color:#764ba2;padding-top:2px;flex-shrink:0">${dd}</div><div class="wt">`;
     if (all.length) all.forEach(a => { h += `<span class="wtg" style="background:${(a.color||"#764ba2")}15;color:${a.color||"#764ba2"}">${a.title}</span>`; });
     else h += `<span style="font-size:10px;color:var(--t4)">frei</span>`;
@@ -1170,11 +1251,19 @@ function saveSched() {
   W.sched.push({id:"u"+Date.now(),day:document.getElementById("nsd")?.value,type:document.getElementById("nst")?.value,title:ti,who:document.getElementById("nstw")?.value||"Familie"});
   W.showSF=false; sv(); rSport();
 }
+function getSportTally() {
+  const people = [...W.kids, ...(W.parents||[])].map(p=>p.name);
+  const tally = {};
+  people.forEach(n => tally[n] = 0);
+  W.sched.forEach(s => { people.forEach(n => { if ((s.who||"").includes(n)) tally[n]++; }); });
+  return tally;
+}
 function rSport() {
   const d=DAYS[W.day], its=W.sched.filter(s=>s.day===d);
+  const whoOpts = ["Familie","Kinder",...W.kids.map(k=>k.name),...(W.parents||[]).map(p=>p.name)];
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Bewegung - ${d}</div><button data-toggle-sf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Aktivitaet</button></div>`;
   if (W.showSF) {
-    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><input id="nstw" class="fi" placeholder="Wer?"><button data-save-sched="1" class="sb">Speichern</button></div>`;
+    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><select id="nstw" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:13px;margin-bottom:8px">${whoOpts.map(n=>`<option${n==="Familie"?" selected":""}>${esc(n)}</option>`).join("")}</select><button data-save-sched="1" class="sb">Speichern</button></div>`;
   }
   if (!its.length) h += `<div class="eb">Freier Tag</div>`;
   its.forEach(s => {
@@ -1190,6 +1279,10 @@ function rSport() {
     h += `</div></div>`;
   });
   h += `</div>`;
+  const tally = getSportTally(), maxT = Math.max(1, ...Object.values(tally));
+  h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:12px;margin-bottom:7px">Aktivitaeten pro Person (Woche)</div><div class="card">`
+    + Object.entries(tally).map(([n,c]) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:52px;font-size:11px;font-weight:700;color:var(--t1);flex-shrink:0">${esc(n)}</span><div style="flex:1;background:var(--sb);border-radius:5px;height:10px;overflow:hidden"><div style="width:${Math.round(c/maxT*100)}%;height:100%;background:#764ba2;border-radius:5px"></div></div><span style="font-size:11px;font-weight:700;color:var(--t2);width:16px;text-align:right">${c}</span></div>`).join("")
+    + `</div>`;
   document.getElementById("t-sport").innerHTML = h;
 }
 
