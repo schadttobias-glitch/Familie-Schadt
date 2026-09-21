@@ -118,6 +118,7 @@ input,select,textarea{font-family:inherit}
     </div>
   </div>
   <div id="day-row" style="display:flex;gap:5px;padding:7px 10px 4px;overflow-x:auto;scrollbar-width:none"></div>
+  <div id="week-row" style="display:flex;align-items:center;justify-content:center;gap:8px;color:white;font-size:11px;font-weight:700;padding:0 10px 5px"></div>
   <div id="tab-row" style="display:flex;margin:4px 10px;background:rgba(255,255,255,0.15);border-radius:12px;padding:3px;gap:2px;overflow-x:auto;scrollbar-width:none">
     <button class="tb on" data-tab="plan"><span>&#127869;</span>Essen</button>
     <button class="tb" data-tab="sterne"><span>&#11088;</span>Sterne</button>
@@ -180,49 +181,49 @@ const SHOP = [
 const SLOT_KAT = {f:"fruehstueck", m:"mittagessen", a:"abendessen", s:"snack"};
 const RECIPES = {
   fruehstueck: {label:"Fruehstueck", items:[
-    {id:"mb", name:"Milchbrei mit Banane", kc:360, p:11, vc:12, fe:3, ca:280},
-    {id:"pf", name:"Obstpfannkuchen", kc:380, p:12, vc:30, fe:2, ca:200},
-    {id:"po", name:"Porridge mit Apfel und Nuessen", kc:370, p:11, vc:10, fe:4, ca:160},
-    {id:"ae", name:"Toast mit Avocado und Ei", kc:400, p:16, vc:12, fe:3, ca:120},
-    {id:"sb", name:"Smoothie-Bowl", kc:340, p:10, vc:55, fe:4, ca:200},
-    {id:"pa", name:"Pancakes mit Beeren-Sauce", kc:460, p:14, vc:25, fe:3, ca:200},
-    {id:"wa", name:"Dinkel-Waffeln mit Apfelmus", kc:440, p:13, vc:5, fe:3, ca:220},
-    {id:"mue", name:"Bircher-Muesli ueber Nacht", kc:390, p:13, vc:18, fe:3, ca:250},
-    {id:"rk", name:"Ruehrei mit Gemuese", kc:420, p:18, vc:22, fe:3, ca:120},
-    {id:"ef", name:"Dinkel-Eierkuchen", kc:350, p:11, vc:28, fe:2, ca:180},
+    {id:"mb", name:"Milchbrei mit Banane", kc:360, p:11, vc:12, fe:3, ca:280, zutaten:["500ml Vollmilch","100g Griess","2 Bananen","2 EL Honig","1 TL Zimt","4 EL Aliana Leinoel","Beeren"]},
+    {id:"pf", name:"Obstpfannkuchen", kc:380, p:12, vc:30, fe:2, ca:200, zutaten:["250g Dinkelmehl","2 Eier","300ml Milch","1 TL Backpulver","Butter","Erdbeeren, Banane, Blaubeeren","Joghurt zum Dippen"]},
+    {id:"po", name:"Porridge mit Apfel und Nuessen", kc:370, p:11, vc:10, fe:4, ca:160, zutaten:["400g Haferflocken","800ml Milch","2 Aepfel gerieben","4 EL Walnuesse","2 EL Honig","1 TL Zimt","4 EL Aliana Leinoel"]},
+    {id:"ae", name:"Toast mit Avocado und Ei", kc:400, p:16, vc:12, fe:3, ca:120, zutaten:["8 Scheiben Vollkorntoast","2 Avocados","4 Eier","Zitrone, Salz","Kresse"]},
+    {id:"sb", name:"Smoothie-Bowl", kc:340, p:10, vc:55, fe:4, ca:200, zutaten:["200g TK-Mango","100g Spinat","2 gefrorene Bananen","150ml Kokosmilch","Granola, Beeren","2 EL Aliana Leinoel"]},
+    {id:"pa", name:"Pancakes mit Beeren-Sauce", kc:460, p:14, vc:25, fe:3, ca:200, zutaten:["250g Mehl","2 TL Backpulver","2 Eier","300ml Buttermilch","200g Beeren + Honig fuer Sauce"]},
+    {id:"wa", name:"Dinkel-Waffeln mit Apfelmus", kc:440, p:13, vc:5, fe:3, ca:220, zutaten:["300g Dinkelmehl","3 Eier","250ml Milch","100g Butter","2 EL Honig","Apfelmus"]},
+    {id:"mue", name:"Bircher-Muesli ueber Nacht", kc:390, p:13, vc:18, fe:3, ca:250, zutaten:["400g Haferflocken","600ml Milch","200g Joghurt","2 EL Honig","2 Aepfel gerieben","Beeren","2 EL Aliana Leinoel"]},
+    {id:"rk", name:"Ruehrei mit Gemuese", kc:420, p:18, vc:22, fe:3, ca:120, zutaten:["8 Eier","4 EL Milch","1 Paprika","Schnittlauch, Salz","Butter","Toast"]},
+    {id:"ef", name:"Dinkel-Eierkuchen", kc:350, p:11, vc:28, fe:2, ca:180, zutaten:["200g Dinkelmehl","2 Eier","400ml Milch","Butter","Frische Fruechte","Honig"]},
   ]},
   mittagessen: {label:"Mittagessen", items:[
-    {id:"nu", name:"Nudeln mit Tomaten-Gemuesesosse", kc:480, p:18, vc:35, fe:4, ca:160},
-    {id:"hr", name:"Haehnchen-Reis-Topf", kc:500, p:32, vc:40, fe:3, ca:120},
-    {id:"au", name:"Gemuese-Nudel-Auflauf", kc:490, p:22, vc:42, fe:3, ca:320},
-    {id:"li", name:"Linsen-Gemuese-Suppe", kc:460, p:22, vc:22, fe:6, ca:140},
-    {id:"pi", name:"Kinderpizza selbstgemacht", kc:520, p:22, vc:30, fe:4, ca:320},
-    {id:"ng", name:"Haehnchen-Nuggets selbstgemacht", kc:540, p:36, vc:20, fe:3, ca:120},
-    {id:"br", name:"Sonntagsbraten", kc:580, p:42, vc:28, fe:5, ca:140},
-    {id:"ff2", name:"Mini-Fischfrikadellen", kc:400, p:26, vc:15, fe:2, ca:140},
-    {id:"hg", name:"Haehnchen-Gemuese-Pfanne mit Quinoa", kc:520, p:38, vc:45, fe:4, ca:110},
-    {id:"wr", name:"Gemuese-Wraps mit Hummus", kc:400, p:16, vc:35, fe:4, ca:140},
-    {id:"ss", name:"Sternchennudel-Suppe", kc:350, p:12, vc:28, fe:3, ca:140},
+    {id:"nu", name:"Nudeln mit Tomaten-Gemuesesosse", kc:480, p:18, vc:35, fe:4, ca:160, zutaten:["400g Vollkornnudeln","2 Dosen Tomaten","1 Zucchini","1 Paprika","1 Karotte","Oregano, Olivenoel","Parmesan"]},
+    {id:"hr", name:"Haehnchen-Reis-Topf", kc:500, p:32, vc:40, fe:3, ca:120, zutaten:["400g Haehnchenbrust","300g Reis","2 Karotten","1 Zucchini","100g Erbsen TK","600ml Bruehe"]},
+    {id:"au", name:"Gemuese-Nudel-Auflauf", kc:490, p:22, vc:42, fe:3, ca:320, zutaten:["400g Nudeln","2 Zucchini","2 Paprika","200g Mais","400ml Sahne","200g Kaese gerieben","2 Eier"]},
+    {id:"li", name:"Linsen-Gemuese-Suppe", kc:460, p:22, vc:22, fe:6, ca:140, zutaten:["250g rote Linsen","2 Karotten","2 Kartoffeln","1 Dose Tomaten","800ml Bruehe","1 TL Kurkuma","4 EL Aliana Leinoel"]},
+    {id:"pi", name:"Kinderpizza selbstgemacht", kc:520, p:22, vc:30, fe:4, ca:320, zutaten:["400g Dinkelmehl","1 Paeckchen Trockenhefe","280ml Wasser","Tomatensosse, Mozzarella","Mais, Paprika"]},
+    {id:"ng", name:"Haehnchen-Nuggets selbstgemacht", kc:540, p:36, vc:20, fe:3, ca:120, zutaten:["600g Haehnchenbrust","2 Eier","100g Paniermehl","50g Parmesan","Paprikapulver"]},
+    {id:"br", name:"Sonntagsbraten", kc:580, p:42, vc:28, fe:5, ca:140, zutaten:["1 Haehnchen 1.8kg","800g Kartoffeln","400g gruene Bohnen","Rosmarin, Thymian","500ml Bruehe"]},
+    {id:"ff2", name:"Mini-Fischfrikadellen", kc:400, p:26, vc:15, fe:2, ca:140, zutaten:["400g Lachsfilet","300g Kartoffelpueree","1 Ei","2 EL Haferflocken","Dill, Zitrone"]},
+    {id:"hg", name:"Haehnchen-Gemuese-Pfanne mit Quinoa", kc:520, p:38, vc:45, fe:4, ca:110, zutaten:["500g Haehnchenbrust","300g Quinoa","2 Paprika","200g Zucchini","Sojasosse, Sesam"]},
+    {id:"wr", name:"Gemuese-Wraps mit Hummus", kc:400, p:16, vc:35, fe:4, ca:140, zutaten:["8 Vollkorn-Wraps","400g Hummus","Gurke, Tomaten, Paprika","Rucola, Kaese"]},
+    {id:"ss", name:"Sternchennudel-Suppe", kc:350, p:12, vc:28, fe:3, ca:140, zutaten:["2 Dosen Tomaten","500ml Gemuesebruehe","100g Sternchennudeln","Basilikum, Parmesan"]},
   ]},
   abendessen: {label:"Abendessen", items:[
-    {id:"la", name:"Lachs-Sticks mit Kartoffelpueree", kc:420, p:28, vc:18, fe:2, ca:180},
-    {id:"om", name:"Gemuese-Omelett", kc:360, p:20, vc:22, fe:3, ca:180},
-    {id:"ok", name:"Ofenkartoffeln mit Quark", kc:380, p:18, vc:25, fe:2, ca:200},
-    {id:"gs", name:"Bunte Gemuesesuppe", kc:320, p:14, vc:30, fe:4, ca:140},
-    {id:"fb", name:"Fischstaebchen mit Kartoffeln", kc:430, p:24, vc:20, fe:2, ca:130},
-    {id:"gk", name:"Gemuese-Curry mit Reis", kc:460, p:16, vc:42, fe:4, ca:130},
-    {id:"sp", name:"Spinat-Ricotta-Pasta", kc:440, p:20, vc:30, fe:4, ca:280},
-    {id:"bb", name:"Brotzeit-Platte", kc:350, p:18, vc:20, fe:2, ca:250},
+    {id:"la", name:"Lachs-Sticks mit Kartoffelpueree", kc:420, p:28, vc:18, fe:2, ca:180, zutaten:["400g Lachsfilet","100g Paniermehl","2 Eier","Dill, Zitrone","600g Kartoffeln","Milch + Butter","2 EL Aliana Leinoel"]},
+    {id:"om", name:"Gemuese-Omelett", kc:360, p:20, vc:22, fe:3, ca:180, zutaten:["8 Eier","4 EL Milch","100g Mais","100g Erbsen","1 Paprika","Kaese gerieben"]},
+    {id:"ok", name:"Ofenkartoffeln mit Quark", kc:380, p:18, vc:25, fe:2, ca:200, zutaten:["8 Kartoffeln","400g Magerquark","100ml Milch","Schnittlauch","Mais, Paprika","2 EL Aliana Leinoel"]},
+    {id:"gs", name:"Bunte Gemuesesuppe", kc:320, p:14, vc:30, fe:4, ca:140, zutaten:["Kartoffeln, Karotten, Erbsen, Lauch","1.2L Gemuesebruehe","Petersilie","2 EL Aliana Leinoel"]},
+    {id:"fb", name:"Fischstaebchen mit Kartoffeln", kc:430, p:24, vc:20, fe:2, ca:130, zutaten:["500g Weissfisch","100g Paniermehl","2 Eier","600g Kartoffeln","Joghurt-Dip","Salat"]},
+    {id:"gk", name:"Gemuese-Curry mit Reis", kc:460, p:16, vc:42, fe:4, ca:130, zutaten:["400g Vollkornreis","1 Dose Kokosmilch","1 Dose Kichererbsen","2 Paprika, 1 Zucchini","2 EL Currypulver mild"]},
+    {id:"sp", name:"Spinat-Ricotta-Pasta", kc:440, p:20, vc:30, fe:4, ca:280, zutaten:["400g Vollkornnudeln","250g Ricotta","200g Spinat","2 Knoblauchzehen","Parmesan"]},
+    {id:"bb", name:"Brotzeit-Platte", kc:350, p:18, vc:20, fe:2, ca:250, zutaten:["Vollkornbrot","Kaese, Aufschnitt","Rohkost: Gurke, Paprika, Tomaten","Butter, Quark","Aliana Leinoel"]},
   ]},
   snack: {label:"Snacks", items:[
-    {id:"jb", name:"Joghurt-Beeren-Bowl", kc:180, p:7, vc:25, fe:1, ca:200},
-    {id:"ae2", name:"Apfelscheiben mit Erdnussbutter", kc:190, p:5, vc:8, fe:1, ca:30},
-    {id:"mq", name:"Moehren-Sticks mit Quark-Dip", kc:140, p:8, vc:10, fe:1, ca:120},
-    {id:"bk", name:"Bananen-Haferkekse", kc:200, p:5, vc:5, fe:2, ca:40},
-    {id:"os", name:"Obstsalat mit Chia", kc:160, p:3, vc:40, fe:1, ca:40},
-    {id:"pc", name:"Selbstgemachtes Popcorn", kc:180, p:4, vc:2, fe:1, ca:20},
-    {id:"qb", name:"Quark-Beeren-Bowl", kc:180, p:12, vc:35, fe:1, ca:200},
-    {id:"ns", name:"Nuss-Trockenfruechte-Mix", kc:220, p:6, vc:3, fe:2, ca:50},
+    {id:"jb", name:"Joghurt-Beeren-Bowl", kc:180, p:7, vc:25, fe:1, ca:200, zutaten:["400g Naturjoghurt","200g Beeren","2 EL Honig","Granola","Chia-Samen"]},
+    {id:"ae2", name:"Apfelscheiben mit Erdnussbutter", kc:190, p:5, vc:8, fe:1, ca:30, zutaten:["4 Aepfel","8 EL Erdnussbutter","Optional: Rosinen, Kokos"]},
+    {id:"mq", name:"Moehren-Sticks mit Quark-Dip", kc:140, p:8, vc:10, fe:1, ca:120, zutaten:["6 Moehren","200g Quark","2 EL Aliana Leinoel","Schnittlauch, Salz"]},
+    {id:"bk", name:"Bananen-Haferkekse", kc:200, p:5, vc:5, fe:2, ca:40, zutaten:["3 reife Bananen","200g Haferflocken","2 EL Honig","1 TL Zimt"]},
+    {id:"os", name:"Obstsalat mit Chia", kc:160, p:3, vc:40, fe:1, ca:40, zutaten:["Saison-Obst","2 EL Chia-Samen","Orangensaft","1 EL Honig"]},
+    {id:"pc", name:"Selbstgemachtes Popcorn", kc:180, p:4, vc:2, fe:1, ca:20, zutaten:["150g Popcornmais","2 EL Kokosfett","Salz oder Honig + Zimt"]},
+    {id:"qb", name:"Quark-Beeren-Bowl", kc:180, p:12, vc:35, fe:1, ca:200, zutaten:["400g Quark","100ml Milch","200g Erdbeeren","2 EL Honig","2 EL Aliana Leinoel"]},
+    {id:"ns", name:"Nuss-Trockenfruechte-Mix", kc:220, p:6, vc:3, fe:2, ca:50, zutaten:["Mandeln 50g","Walnuesse 50g","Rosinen 40g","Getrocknete Aprikosen 30g"]},
   ]},
 };
 const TC = {
@@ -273,7 +274,7 @@ let W = {
     {id:"s12",day:"So",type:"training",title:"Bewegungsspiele",who:"Familie"},
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
-  dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[],
+  dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
 };
 
 const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} };
@@ -294,25 +295,54 @@ function findRecipe(id) {
   }
   return (W.customRecipes||[]).find(x => x.id === id) || null;
 }
+// WOCHEN-HELFER
+function isoDate(d) { return d.toISOString().slice(0,10); }
+function mondayOf(d) { const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
+function weekKey(d) { return isoDate(mondayOf(d)); }
+function viewMonday() { const m=mondayOf(new Date()); m.setDate(m.getDate()+W.weekOffset*7); return m; }
+function viewDate(dayIndex) { const d=new Date(viewMonday()); d.setDate(d.getDate()+dayIndex); return d; }
+function curWeekKey() { return weekKey(viewMonday()); }
+function fmtDshort(d) { return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; }
+function migrateMealOv() {
+  if (W.mealOv && Object.keys(W.mealOv).length) {
+    const wk = weekKey(new Date());
+    if (!W.weekOv) W.weekOv = {};
+    if (!W.weekOv[wk]) W.weekOv[wk] = {};
+    Object.entries(W.mealOv).forEach(([k,v]) => { if (!(k in W.weekOv[wk])) W.weekOv[wk][k] = v; });
+    W.mealOv = {};
+    sv();
+  }
+}
+function findDefaultRecipeId(i, slot) {
+  const name = PLAN[i][slot], kat = SLOT_KAT[slot];
+  const r = RECIPES[kat] && RECIPES[kat].items.find(x => x.name === name);
+  return r ? r.id : null;
+}
 function getMeal(i, slot) {
-  const key = i+"-"+slot;
-  const base = {n:PLAN[i][slot], kc:PLAN[i][slot+"kc"], p:PLAN[i][slot+"p"], vc:PLAN[i][slot+"vc"], fe:PLAN[i][slot+"fe"], ca:PLAN[i][slot+"ca"], rid:null};
-  const ov = W.mealOv[key];
+  const key = i+"-"+slot, wk = curWeekKey();
+  const base = {n:PLAN[i][slot], kc:PLAN[i][slot+"kc"], p:PLAN[i][slot+"p"], vc:PLAN[i][slot+"vc"], fe:PLAN[i][slot+"fe"], ca:PLAN[i][slot+"ca"], rid:findDefaultRecipeId(i, slot)};
+  const ov = W.weekOv[wk] && W.weekOv[wk][key];
   if (ov === undefined) return base;
   const r = findRecipe(ov);
   if (r) return {n:r.name, kc:r.kc, p:r.p, vc:r.vc, fe:r.fe, ca:r.ca, rid:r.id};
   // Legacy: vor der Rezeptliste konnte hier nur ein reiner Textname gespeichert werden.
   return {...base, n:ov, rid:null};
 }
+function setMealOv(key, val) {
+  const wk = curWeekKey();
+  if (!W.weekOv[wk]) W.weekOv[wk] = {};
+  if (val === "") delete W.weekOv[wk][key]; else W.weekOv[wk][key] = val;
+}
 function onMealSelect(key, val) {
   if (val === "__new__") { W.mealNewForm = key; sv(); rPlan(); return; }
-  if (val === "") { delete W.mealOv[key]; } else { W.mealOv[key] = val; }
+  setMealOv(key, val);
   W.mealNewForm = null; W.mealEdit = null; sv(); rPlan();
 }
 function saveNewRecipe(key) {
   const slot = key.split("-")[1], kat = SLOT_KAT[slot];
   const name = document.getElementById("nrn_"+key)?.value.trim();
   if (!name) return;
+  const zutText = document.getElementById("nrz_"+key)?.value.trim() || "";
   const rec = {
     id: "u"+Date.now(), name, kat,
     kc: Number(document.getElementById("nrkc_"+key)?.value)||0,
@@ -320,12 +350,24 @@ function saveNewRecipe(key) {
     vc: Number(document.getElementById("nrvc_"+key)?.value)||0,
     fe: Number(document.getElementById("nrfe_"+key)?.value)||0,
     ca: Number(document.getElementById("nrca_"+key)?.value)||0,
+    zutaten: zutText ? zutText.split("\n").map(z=>z.trim()).filter(z=>z) : [],
   };
   if (!W.customRecipes) W.customRecipes = [];
   W.customRecipes.push(rec);
-  W.mealOv[key] = rec.id;
+  setMealOv(key, rec.id);
   W.mealNewForm = null; W.mealEdit = null;
   sv(); rPlan();
+}
+function getPlanIngredients() {
+  const seen = new Set(), out = [];
+  for (let di=0; di<7; di++) {
+    ["f","m","a","s"].forEach(slot => {
+      const meal = getMeal(di, slot);
+      const r = meal.rid ? findRecipe(meal.rid) : null;
+      if (r && r.zutaten) r.zutaten.forEach(z => { const k=z.trim().toLowerCase(); if(!seen.has(k)){seen.add(k);out.push(z);} });
+    });
+  }
+  return out;
 }
 
 // UTILITIES: Dark Mode, Backup, Teilen
@@ -368,6 +410,8 @@ function sharePlan() {
 }
 function shareEinkauf() {
   const lines = ["Einkaufsliste:"];
+  const wpOpen = getPlanIngredients().filter(x => !W.chk["wp-"+x]);
+  if (wpOpen.length) { lines.push("", "Aus dem Wochenplan:"); wpOpen.forEach(x=>lines.push("- "+x)); }
   SHOP.forEach((cat,ci) => {
     const open = cat.i.filter((x,ii) => !W.chk[ci+"-"+ii]);
     if (open.length) { lines.push("", cat.c+":"); open.forEach(x=>lines.push("- "+x)); }
@@ -396,6 +440,10 @@ document.addEventListener("click", function(e) {
   if (tb) { setTab(tb.dataset.tab); return; }
   const dr = e.target.closest("[data-day]");
   if (dr) { W.day=parseInt(dr.dataset.day); sv(); renderDays(); renderCurrent(); return; }
+  const wkn = e.target.closest("[data-week-nav]");
+  if (wkn) { W.weekOffset += parseInt(wkn.dataset.weekNav); sv(); renderDays(); renderCurrent(); return; }
+  const wkr = e.target.closest("[data-week-reset]");
+  if (wkr) { W.weekOffset = 0; sv(); renderDays(); renderCurrent(); return; }
   const pk = e.target.closest("[data-pin]");
   if (pk) { pinKey(pk.dataset.pin); return; }
   const aw = e.target.closest("[data-award]");
@@ -569,6 +617,16 @@ function renderDays() {
     const hasDot = W.rec.some(r=>r.day===d);
     return `<button data-day="${i}" style="min-width:40px;height:44px;border-radius:10px;border:none;background:${on?"white":"rgba(255,255,255,0.2)"};color:${on?"#764ba2":"white"};font-weight:800;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0;cursor:pointer">${d}${hasDot?`<span style="width:4px;height:4px;border-radius:50%;background:${on?"#e91e63":"rgba(255,255,255,0.7)"}"></span>`:""}</button>`;
   }).join("");
+  rWeekNav();
+}
+function rWeekNav() {
+  const wr = document.getElementById("week-row");
+  if (!wr) return;
+  const mon=viewMonday(), sun=new Date(mon); sun.setDate(sun.getDate()+6);
+  const lbl=(W.weekOffset===0?"Diese Woche: ":W.weekOffset===1?"Naechste Woche: ":W.weekOffset===-1?"Letzte Woche: ":"")+fmtDshort(mon)+" - "+fmtDshort(sun);
+  wr.innerHTML = `<button data-week-nav="-1" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:7px;width:22px;height:22px;font-weight:800;cursor:pointer">&#8249;</button><span>${lbl}</span>`
+    + (W.weekOffset!==0 ? `<button data-week-reset="1" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:7px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer">Heute</button>` : ``)
+    + `<button data-week-nav="1" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:7px;width:22px;height:22px;font-weight:800;cursor:pointer">&#8250;</button>`;
 }
 
 function setTab(name) {
@@ -616,6 +674,7 @@ function rPlan() {
           + `<input id="nrvc_${key}" type="number" class="fi" placeholder="Vitamin C mg">`
           + `<input id="nrfe_${key}" type="number" class="fi" placeholder="Eisen mg">`
           + `<input id="nrca_${key}" type="number" class="fi" placeholder="Calcium mg">`
+          + `<textarea id="nrz_${key}" class="fi" placeholder="Zutaten fuer die Einkaufsliste - eine pro Zeile (leer lassen z.B. bei Essen unterwegs)" style="min-height:60px;resize:vertical"></textarea>`
           + `<button data-save-new-recipe="${key}" class="sb">Rezept speichern</button></div>`;
       }
     }
@@ -779,15 +838,15 @@ function saveRec(id) {
   W.recEdit=null; sv(); rTermine();
 }
 function rTermine() {
-  const d=DAYS[W.day], todayIso=new Date().toISOString().slice(0,10);
+  const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day));
   const dr=W.rec.filter(r=>r.day===d);
-  const de=W.apts.filter(a=>a.date ? (a.date===todayIso && a.day===d) : a.day===d);
+  const de=W.apts.filter(a=>a.date ? (a.date===viewIso && a.day===d) : a.day===d);
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   if (W.showAF) {
     h += `<div class="card"><div class="ct">Neuer Termin</div>`
       + `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="natOnce" data-toggle-once="1"><label for="natOnce" style="font-size:11px;color:var(--t2)">Einmalig an festem Datum (statt jede Woche)</label></div>`
       + `<div id="nadWrap" style="display:flex;gap:6px;margin-bottom:6px"><select id="nad" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><input id="nat" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
-      + `<div id="nadateWrap" style="display:none;gap:6px;margin-bottom:6px"><input type="date" id="nadate" class="fi" style="margin-bottom:0;flex:1" value="${todayIso}"><input id="nat2" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
+      + `<div id="nadateWrap" style="display:none;gap:6px;margin-bottom:6px"><input type="date" id="nadate" class="fi" style="margin-bottom:0;flex:1" value="${viewIso}"><input id="nat2" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
       + `<input id="nati" class="fi" placeholder="Termin"><input id="naw" class="fi" placeholder="Wer?"><button data-save-apt="1" class="sb">Speichern</button></div>`;
   }
   if (dr.length) {
@@ -808,8 +867,9 @@ function rTermine() {
   }
   if (!dr.length&&!de.length) h += `<div class="eb">Keine Termine heute</div>`;
   h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:14px;margin-bottom:7px">Ganze Woche</div><div class="card">`;
-  DAYS.forEach(dd => {
-    const all=[...W.rec.filter(r=>r.day===dd),...W.apts.filter(a=>a.date?(a.date===todayIso&&a.day===dd):a.day===dd)];
+  DAYS.forEach((dd,di) => {
+    const dtI = isoDate(viewDate(di));
+    const all=[...W.rec.filter(r=>r.day===dd),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):a.day===dd)];
     h += `<div class="wr"><div style="width:24px;font-weight:900;font-size:11px;color:#764ba2;padding-top:2px;flex-shrink:0">${dd}</div><div class="wt">`;
     if (all.length) all.forEach(a => { h += `<span class="wtg" style="background:${(a.color||"#764ba2")}15;color:${a.color||"#764ba2"}">${a.title}</span>`; });
     else h += `<span style="font-size:10px;color:var(--t4)">frei</span>`;
@@ -823,6 +883,16 @@ function rTermine() {
 function rEinkauf() {
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Einkaufsliste</div><div style="display:flex;gap:5px"><button data-share-einkauf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
   h += `<div style="background:rgba(255,255,255,0.18);border-radius:10px;padding:6px 11px;color:white;font-size:11px;margin-bottom:7px">Aliana Kernkraft Leinoel nicht vergessen!</div>`;
+  const wpItems = getPlanIngredients();
+  if (wpItems.length) {
+    const dnWp = wpItems.filter(x=>W.chk["wp-"+x]).length;
+    h += `<div class="card" style="${dnWp===wpItems.length?"opacity:.7":""}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div class="ct" style="margin:0">Aus dem Wochenplan</div><span style="font-size:10px;font-weight:700;color:${dnWp===wpItems.length?"#4caf50":"#aaa"}">${dnWp===wpItems.length?"Fertig":dnWp+"/"+wpItems.length}</span></div>`;
+    wpItems.forEach(x => {
+      const k="wp-"+x, c=W.chk[k];
+      h += `<div class="si" data-chk="${k}"><div class="chkbox${c?" on":""}">${c?"v":""}</div><span style="font-size:12px;color:${c?"var(--t3)":"var(--t1)"};text-decoration:${c?"line-through":"none"}">${x}</span></div>`;
+    });
+    h += `</div>`;
+  }
   SHOP.forEach((cat,ci) => {
     const dn=cat.i.filter((x,ii)=>W.chk[ci+"-"+ii]).length;
     h += `<div class="card" style="${dn===cat.i.length?"opacity:.7":""}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div class="ct" style="margin:0">${cat.c}</div><span style="font-size:10px;font-weight:700;color:${dn===cat.i.length?"#4caf50":"#aaa"}">${dn===cat.i.length?"Fertig":dn+"/"+cat.i.length}</span></div>`;
@@ -869,6 +939,7 @@ function rSport() {
 
 // INIT
 ld();
+migrateMealOv();
 showScr("start");
 </script>
 </body>
