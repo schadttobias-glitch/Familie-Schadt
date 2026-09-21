@@ -177,6 +177,54 @@ const SHOP = [
   {c:"Getreide",i:["Haferflocken 1kg","Dinkelmehl 1kg","Vollkornnudeln 1kg","Linsen 500g","Vollkornbrot x2","Wraps x8"]},
   {c:"Vorrat",i:["Hummus 400g","Aliana Kernkraft Leinoel","Olivenoel","Honig 500g","Erdnussbutter 400g","Tomaten Dose x4"]},
 ];
+const SLOT_KAT = {f:"fruehstueck", m:"mittagessen", a:"abendessen", s:"snack"};
+const RECIPES = {
+  fruehstueck: {label:"Fruehstueck", items:[
+    {id:"mb", name:"Milchbrei mit Banane", kc:360, p:11, vc:12, fe:3, ca:280},
+    {id:"pf", name:"Obstpfannkuchen", kc:380, p:12, vc:30, fe:2, ca:200},
+    {id:"po", name:"Porridge mit Apfel und Nuessen", kc:370, p:11, vc:10, fe:4, ca:160},
+    {id:"ae", name:"Toast mit Avocado und Ei", kc:400, p:16, vc:12, fe:3, ca:120},
+    {id:"sb", name:"Smoothie-Bowl", kc:340, p:10, vc:55, fe:4, ca:200},
+    {id:"pa", name:"Pancakes mit Beeren-Sauce", kc:460, p:14, vc:25, fe:3, ca:200},
+    {id:"wa", name:"Dinkel-Waffeln mit Apfelmus", kc:440, p:13, vc:5, fe:3, ca:220},
+    {id:"mue", name:"Bircher-Muesli ueber Nacht", kc:390, p:13, vc:18, fe:3, ca:250},
+    {id:"rk", name:"Ruehrei mit Gemuese", kc:420, p:18, vc:22, fe:3, ca:120},
+    {id:"ef", name:"Dinkel-Eierkuchen", kc:350, p:11, vc:28, fe:2, ca:180},
+  ]},
+  mittagessen: {label:"Mittagessen", items:[
+    {id:"nu", name:"Nudeln mit Tomaten-Gemuesesosse", kc:480, p:18, vc:35, fe:4, ca:160},
+    {id:"hr", name:"Haehnchen-Reis-Topf", kc:500, p:32, vc:40, fe:3, ca:120},
+    {id:"au", name:"Gemuese-Nudel-Auflauf", kc:490, p:22, vc:42, fe:3, ca:320},
+    {id:"li", name:"Linsen-Gemuese-Suppe", kc:460, p:22, vc:22, fe:6, ca:140},
+    {id:"pi", name:"Kinderpizza selbstgemacht", kc:520, p:22, vc:30, fe:4, ca:320},
+    {id:"ng", name:"Haehnchen-Nuggets selbstgemacht", kc:540, p:36, vc:20, fe:3, ca:120},
+    {id:"br", name:"Sonntagsbraten", kc:580, p:42, vc:28, fe:5, ca:140},
+    {id:"ff2", name:"Mini-Fischfrikadellen", kc:400, p:26, vc:15, fe:2, ca:140},
+    {id:"hg", name:"Haehnchen-Gemuese-Pfanne mit Quinoa", kc:520, p:38, vc:45, fe:4, ca:110},
+    {id:"wr", name:"Gemuese-Wraps mit Hummus", kc:400, p:16, vc:35, fe:4, ca:140},
+    {id:"ss", name:"Sternchennudel-Suppe", kc:350, p:12, vc:28, fe:3, ca:140},
+  ]},
+  abendessen: {label:"Abendessen", items:[
+    {id:"la", name:"Lachs-Sticks mit Kartoffelpueree", kc:420, p:28, vc:18, fe:2, ca:180},
+    {id:"om", name:"Gemuese-Omelett", kc:360, p:20, vc:22, fe:3, ca:180},
+    {id:"ok", name:"Ofenkartoffeln mit Quark", kc:380, p:18, vc:25, fe:2, ca:200},
+    {id:"gs", name:"Bunte Gemuesesuppe", kc:320, p:14, vc:30, fe:4, ca:140},
+    {id:"fb", name:"Fischstaebchen mit Kartoffeln", kc:430, p:24, vc:20, fe:2, ca:130},
+    {id:"gk", name:"Gemuese-Curry mit Reis", kc:460, p:16, vc:42, fe:4, ca:130},
+    {id:"sp", name:"Spinat-Ricotta-Pasta", kc:440, p:20, vc:30, fe:4, ca:280},
+    {id:"bb", name:"Brotzeit-Platte", kc:350, p:18, vc:20, fe:2, ca:250},
+  ]},
+  snack: {label:"Snacks", items:[
+    {id:"jb", name:"Joghurt-Beeren-Bowl", kc:180, p:7, vc:25, fe:1, ca:200},
+    {id:"ae2", name:"Apfelscheiben mit Erdnussbutter", kc:190, p:5, vc:8, fe:1, ca:30},
+    {id:"mq", name:"Moehren-Sticks mit Quark-Dip", kc:140, p:8, vc:10, fe:1, ca:120},
+    {id:"bk", name:"Bananen-Haferkekse", kc:200, p:5, vc:5, fe:2, ca:40},
+    {id:"os", name:"Obstsalat mit Chia", kc:160, p:3, vc:40, fe:1, ca:40},
+    {id:"pc", name:"Selbstgemachtes Popcorn", kc:180, p:4, vc:2, fe:1, ca:20},
+    {id:"qb", name:"Quark-Beeren-Bowl", kc:180, p:12, vc:35, fe:1, ca:200},
+    {id:"ns", name:"Nuss-Trockenfruechte-Mix", kc:220, p:6, vc:3, fe:2, ca:50},
+  ]},
+};
 const TC = {
   training:{bg:"#e8f5e9",bd:"#4caf50",tx:"#2e7d32",lb:"Training"},
   lernen:{bg:"#e3f2fd",bd:"#2196f3",tx:"#1565c0",lb:"Lernen"},
@@ -225,7 +273,7 @@ let W = {
     {id:"s12",day:"So",type:"training",title:"Bewegungsspiele",who:"Familie"},
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
-  dark:false, mealEdit:null, mealOv:{},
+  dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[],
 };
 
 const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {} };
@@ -236,18 +284,48 @@ const fmtD = s => { const[y,m,d]=s.split("-"); return d+"."+m+"."+y; };
 const dU = s => { const n=new Date(); n.setHours(0,0,0,0); const d=new Date(s); d.setHours(0,0,0,0); return Math.round((d-n)/86400000); };
 const gNF = () => { const n=new Date(); return FERIEN.filter(f=>new Date(f.b)>=n); };
 const pN = i => {
-  const p=PLAN[i];
-  return {kc:p.fkc+p.mkc+p.akc+p.skc, vc:p.fvc+p.mvc+p.avc+p.svc, fe:p.ffe+p.mfe+p.afe+p.sfe, ca:p.fca+p.mca+p.aca+p.sca};
+  const f=getMeal(i,"f"), m=getMeal(i,"m"), a=getMeal(i,"a"), s=getMeal(i,"s");
+  return {kc:f.kc+m.kc+a.kc+s.kc, vc:f.vc+m.vc+a.vc+s.vc, fe:f.fe+m.fe+a.fe+s.fe, ca:f.ca+m.ca+a.ca+s.ca};
 };
-function getMealName(i, slot) {
-  const k = i+"-"+slot;
-  return W.mealOv[k] !== undefined ? W.mealOv[k] : PLAN[i][slot];
+function findRecipe(id) {
+  for (const kat of Object.keys(RECIPES)) {
+    const r = RECIPES[kat].items.find(x => x.id === id);
+    if (r) return r;
+  }
+  return (W.customRecipes||[]).find(x => x.id === id) || null;
 }
-function saveMeal(key) {
-  const val = document.getElementById("men_"+key)?.value.trim();
-  if (!val) return;
-  W.mealOv[key] = val;
-  W.mealEdit = null; sv(); rPlan();
+function getMeal(i, slot) {
+  const key = i+"-"+slot;
+  const base = {n:PLAN[i][slot], kc:PLAN[i][slot+"kc"], p:PLAN[i][slot+"p"], vc:PLAN[i][slot+"vc"], fe:PLAN[i][slot+"fe"], ca:PLAN[i][slot+"ca"], rid:null};
+  const ov = W.mealOv[key];
+  if (ov === undefined) return base;
+  const r = findRecipe(ov);
+  if (r) return {n:r.name, kc:r.kc, p:r.p, vc:r.vc, fe:r.fe, ca:r.ca, rid:r.id};
+  // Legacy: vor der Rezeptliste konnte hier nur ein reiner Textname gespeichert werden.
+  return {...base, n:ov, rid:null};
+}
+function onMealSelect(key, val) {
+  if (val === "__new__") { W.mealNewForm = key; sv(); rPlan(); return; }
+  if (val === "") { delete W.mealOv[key]; } else { W.mealOv[key] = val; }
+  W.mealNewForm = null; W.mealEdit = null; sv(); rPlan();
+}
+function saveNewRecipe(key) {
+  const slot = key.split("-")[1], kat = SLOT_KAT[slot];
+  const name = document.getElementById("nrn_"+key)?.value.trim();
+  if (!name) return;
+  const rec = {
+    id: "u"+Date.now(), name, kat,
+    kc: Number(document.getElementById("nrkc_"+key)?.value)||0,
+    p: Number(document.getElementById("nrp_"+key)?.value)||0,
+    vc: Number(document.getElementById("nrvc_"+key)?.value)||0,
+    fe: Number(document.getElementById("nrfe_"+key)?.value)||0,
+    ca: Number(document.getElementById("nrca_"+key)?.value)||0,
+  };
+  if (!W.customRecipes) W.customRecipes = [];
+  W.customRecipes.push(rec);
+  W.mealOv[key] = rec.id;
+  W.mealNewForm = null; W.mealEdit = null;
+  sv(); rPlan();
 }
 
 // UTILITIES: Dark Mode, Backup, Teilen
@@ -283,7 +361,7 @@ function sharePlan() {
   const p = PLAN[W.day];
   const lines = [DAYSF[W.day]+" - Essensplan", ""];
   [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
-    lines.push(lb+": "+getMealName(W.day, slot));
+    lines.push(lb+": "+getMeal(W.day, slot).n);
   });
   if (p.note) lines.push("", p.note);
   shareOrCopy("Essensplan "+DAYSF[W.day], lines.join("\n"));
@@ -365,11 +443,9 @@ document.addEventListener("click", function(e) {
   const eb = e.target.closest("[data-export-backup]");
   if (eb) { exportBackup(); return; }
   const em = e.target.closest("[data-edit-meal]");
-  if (em) { W.mealEdit = W.mealEdit===em.dataset.editMeal?null:em.dataset.editMeal; sv(); rPlan(); return; }
-  const sm = e.target.closest("[data-save-meal]");
-  if (sm) { saveMeal(sm.dataset.saveMeal); return; }
-  const rm = e.target.closest("[data-reset-meal]");
-  if (rm) { delete W.mealOv[rm.dataset.resetMeal]; W.mealEdit=null; sv(); rPlan(); return; }
+  if (em) { W.mealEdit = W.mealEdit===em.dataset.editMeal?null:em.dataset.editMeal; W.mealNewForm=null; sv(); rPlan(); return; }
+  const snr = e.target.closest("[data-save-new-recipe]");
+  if (snr) { saveNewRecipe(snr.dataset.saveNewRecipe); return; }
   const shp = e.target.closest("[data-share-plan]");
   if (shp) { sharePlan(); return; }
   const she = e.target.closest("[data-share-einkauf]");
@@ -380,6 +456,10 @@ document.addEventListener("click", function(e) {
     if (dw && dd) { const once = onceChk.checked; dw.style.display = once?"none":"flex"; dd.style.display = once?"flex":"none"; }
     return;
   }
+});
+document.addEventListener("change", function(e) {
+  const ms = e.target.closest("[data-meal-select]");
+  if (ms) { onMealSelect(ms.dataset.mealSelect, ms.value); return; }
 });
 
 // PIN
@@ -521,14 +601,25 @@ function rPlan() {
     h += `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--t2);margin-bottom:2px"><span>${n.lb}</span><span>Alia ${pa}% Tiana ${pt}%</span></div><div style="display:flex;gap:3px"><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pa}%;height:100%;background:${bc(pa)};border-radius:4px"></div></div><div style="flex:1;background:var(--sb);border-radius:4px;height:6px;overflow:hidden"><div style="width:${pt}%;height:100%;background:${bc(pt)};border-radius:4px"></div></div></div></div>`;
   });
   h += `</div>`;
-  [["f","Fruehstueck",p.fkc,p.fp,p.fvc,p.ffe,p.fca],["m","Mittagessen",p.mkc,p.mp,p.mvc,p.mfe,p.mca],["a","Abendessen",p.akc,p.ap,p.avc,p.afe,p.aca],["s","Snack",p.skc,p.sp,p.svc,p.sfe,p.sca]].forEach(([slot,lb,kc,pr,vc,fe,ca]) => {
-    const key = W.day+"-"+slot, name = getMealName(W.day, slot), overridden = W.mealOv[key]!==undefined;
-    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${name}</div></div><button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div>`;
+  [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
+    const key = W.day+"-"+slot, meal = getMeal(W.day, slot), kat = SLOT_KAT[slot];
+    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${meal.n}</div></div><button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div>`;
     if (W.mealEdit===key) {
-      h += `<div style="display:flex;gap:6px;margin-bottom:6px"><input id="men_${key}" class="fi" style="margin-bottom:0" value="${name}" placeholder="Gericht"><button data-save-meal="${key}" style="background:#764ba2;color:white;border:none;border-radius:8px;padding:0 12px;font-weight:800;font-size:12px;cursor:pointer">OK</button></div>`;
-      if (overridden) h += `<button data-reset-meal="${key}" style="background:none;border:none;color:var(--t3);font-size:10px;text-decoration:underline;cursor:pointer;margin-bottom:6px">Zuruecksetzen auf Standard-Plan</button>`;
+      const opts = [...(RECIPES[kat]?RECIPES[kat].items:[]), ...(W.customRecipes||[]).filter(r=>r.kat===kat)];
+      h += `<select data-meal-select="${key}" class="fi"><option value="">- Standard-Plan -</option>`
+        + opts.map(o => `<option value="${o.id}"${meal.rid===o.id?" selected":""}>${o.name} (${o.kc} kcal)</option>`).join("")
+        + `<option value="__new__">+ Neues Gericht anlegen</option></select>`;
+      if (W.mealNewForm===key) {
+        h += `<div style="margin-bottom:6px"><input id="nrn_${key}" class="fi" placeholder="Name (z.B. Doener)">`
+          + `<input id="nrkc_${key}" type="number" class="fi" placeholder="Kalorien">`
+          + `<input id="nrp_${key}" type="number" class="fi" placeholder="Protein g">`
+          + `<input id="nrvc_${key}" type="number" class="fi" placeholder="Vitamin C mg">`
+          + `<input id="nrfe_${key}" type="number" class="fi" placeholder="Eisen mg">`
+          + `<input id="nrca_${key}" type="number" class="fi" placeholder="Calcium mg">`
+          + `<button data-save-new-recipe="${key}" class="sb">Rezept speichern</button></div>`;
+      }
     }
-    h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${pr}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${ca}mg</span></div></div>`;
+    h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div></div>`;
   });
   document.getElementById("t-plan").innerHTML = h;
 }
