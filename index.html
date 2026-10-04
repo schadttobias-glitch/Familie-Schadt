@@ -16,7 +16,10 @@
 :root{--cb:#fff;--cb2:#f8f8ff;--ib:#fff;--hb:#f5f5f5;--sb:#f0f0f0;--t1:#222;--t2:#666;--t3:#999;--t4:#ccc;--bd:#eee;--bd2:#f5f5f5;--dg:#ffebee}
 body.dark{--cb:#1e1e2e;--cb2:#242438;--ib:#242438;--hb:#2a2a3e;--sb:#2a2a3e;--t1:#e8e8f0;--t2:#a8a8bc;--t3:#8888a0;--t4:#5a5a72;--bd:#33334a;--bd2:#2c2c42;--dg:#3a1f28}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;background:#1a1625}
+@media (min-width:460px){
+  .screen{max-width:430px;margin-left:auto;margin-right:auto;box-shadow:0 0 60px rgba(0,0,0,0.4);min-height:100vh}
+}
 button{cursor:pointer;font-family:inherit}
 input,select,textarea{font-family:inherit}
 .card{background:var(--cb);color:var(--t1);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
@@ -874,7 +877,7 @@ function exportICS() {
 function showScr(id) {
   document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
   const el = document.getElementById("scr-"+id);
-  if (el) el.style.display = (id === "pin") ? "flex" : "block";
+  if (el) el.style.display = (id === "pin" || id === "start") ? "flex" : "block";
 }
 
 // EVENT DELEGATION
