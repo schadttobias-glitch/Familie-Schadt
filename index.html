@@ -284,7 +284,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
-  planTemplates:{}, showTpl:false, mealRatings:{},
+  planTemplates:{}, showTpl:false, mealRatings:{}, calMonthOffset:0,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -409,6 +409,38 @@ function recOccursOn(item, date) {
     return ((diffWeeks % 2) + 2) % 2 === 0;
   }
   return true;
+}
+const PERSON_COLORS = {tobi:"#1565c0", eva:"#e53935", alia:"#e91e63", tiana:"#8e24aa"};
+function personColorsForWho(who) {
+  const w = who || "";
+  const all = [...W.kids, ...(W.parents||[])];
+  const matched = all.filter(p => w.includes(p.name)).map(p => PERSON_COLORS[p.id] || "#999");
+  return matched.length ? matched : ["#999"];
+}
+function eventsOnDate(date) {
+  const iso = isoDate(date);
+  return [
+    ...W.rec.filter(r => recOccursOn(r, date)),
+    ...W.apts.filter(a => !a.date && recOccursOn(a, date)),
+    ...W.apts.filter(a => a.date === iso)
+  ];
+}
+function monthMatrix(monthOffset) {
+  const base = new Date(); base.setDate(1); base.setHours(0,0,0,0); base.setMonth(base.getMonth()+monthOffset);
+  const year = base.getFullYear(), month = base.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay()+6)%7;
+  const gridStart = new Date(firstOfMonth); gridStart.setDate(gridStart.getDate()-startOffset);
+  const days = [];
+  for (let i=0; i<42; i++) { const d = new Date(gridStart); d.setDate(d.getDate()+i); days.push(d); }
+  return {year, month, days};
+}
+function jumpToDate(isoStr) {
+  const target = new Date(isoStr+"T00:00:00");
+  const diffWeeks = Math.round((mondayOf(target) - mondayOf(new Date())) / (7*86400000));
+  W.weekOffset = diffWeeks;
+  W.day = (target.getDay()+6)%7;
+  sv(); renderDays(); renderCurrent();
 }
 function migrateMealOv() {
   if (W.mealOv && Object.keys(W.mealOv).length) {
@@ -852,6 +884,10 @@ document.addEventListener("click", function(e) {
   }
   const rtb = e.target.closest("[data-rate]");
   if (rtb) { rateMeal(rtb.dataset.rate, rtb.dataset.dir); return; }
+  const calNav = e.target.closest("[data-cal-nav]");
+  if (calNav) { W.calMonthOffset = (W.calMonthOffset||0) + parseInt(calNav.dataset.calNav); sv(); rTermine(); return; }
+  const calJump = e.target.closest("[data-cal-jump]");
+  if (calJump) { jumpToDate(calJump.dataset.calJump); return; }
 });
 document.addEventListener("change", function(e) {
   const ms = e.target.closest("[data-meal-select]");
@@ -1256,6 +1292,36 @@ function saveRec(id) {
   }
   W.recEdit=null; sv(); rTermine();
 }
+function rMonthCal() {
+  const {year, month, days} = monthMatrix(W.calMonthOffset||0);
+  const todayIso = isoDate(new Date());
+  const monthNames = ["Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`
+    + `<button data-cal-nav="-1" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;width:28px;height:28px;font-weight:800;cursor:pointer">&#8249;</button>`
+    + `<b style="font-size:13px;color:var(--t1)">${monthNames[month]} ${year}</b>`
+    + `<button data-cal-nav="1" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;width:28px;height:28px;font-weight:800;cursor:pointer">&#8250;</button>`
+    + `</div>`;
+  h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">`
+    + DAYS.map(x=>`<div style="text-align:center;font-size:9px;font-weight:800;color:var(--t3)">${x}</div>`).join("")
+    + `</div>`;
+  h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">`;
+  days.forEach(d => {
+    const iso = isoDate(d);
+    const inMonth = d.getMonth()===month;
+    const isToday = iso===todayIso;
+    const dotColors = [...new Set(eventsOnDate(d).flatMap(e => personColorsForWho(e.who)))].slice(0,4);
+    h += `<div data-cal-jump="${iso}" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;${isToday?"background:#764ba2":"background:var(--hb)"}">`
+      + `<span style="font-size:11px;font-weight:${isToday?"800":"600"};color:${isToday?"white":inMonth?"var(--t1)":"var(--t4)"}">${d.getDate()}</span>`
+      + `<span style="display:flex;gap:2px;margin-top:2px;height:5px">${dotColors.map(c=>`<span style="width:5px;height:5px;border-radius:50%;background:${c}"></span>`).join("")}</span>`
+      + `</div>`;
+  });
+  h += `</div>`;
+  h += `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:var(--t2)">`
+    + [...W.kids, ...(W.parents||[])].map(p => `<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${PERSON_COLORS[p.id]||"#999"}"></span>${esc(p.name)}</span>`).join("")
+    + `</div>`;
+  h += `</div>`;
+  return h;
+}
 function rTermine() {
   const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day)), viewDt=viewDate(W.day);
   const dr=W.rec.filter(r=>recOccursOn(r, viewDt));
@@ -1263,7 +1329,8 @@ function rTermine() {
   const de=W.apts.filter(a=>a.date && a.date===viewIso && a.day===d);
   const freqSelect = (id, cur) => `<select id="${id}" data-freq-select="${id}" style="padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px;margin-bottom:6px"><option value="weekly"${!cur||cur==="weekly"?" selected":""}>Jede Woche</option><option value="biweekly"${cur==="biweekly"?" selected":""}>Alle 2 Wochen</option><option value="monthly"${cur==="monthly"?" selected":""}>Jeden Monat</option></select>`;
   const freqLabel = r => r.freq==="biweekly" ? " · alle 2 Wochen" : r.freq==="monthly" ? " · jeden Monat (Tag "+(r.dayOfMonth||1)+")" : "";
-  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button data-export-ics="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Kalender</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
+  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button data-export-ics="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Export</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
+  h += rMonthCal();
   if (W.showAF) {
     h += `<div class="card"><div class="ct">Neuer Termin</div>`
       + `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="natOnce" data-toggle-once="1"><label for="natOnce" style="font-size:11px;color:var(--t2)">Einmalig an festem Datum (statt wiederholend)</label></div>`
