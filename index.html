@@ -401,7 +401,7 @@ function findRecipe(id) {
   return (W.customRecipes||[]).find(x => x.id === id) || null;
 }
 // WOCHEN-HELFER
-function isoDate(d) { return d.toISOString().slice(0,10); }
+function isoDate(d) { return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function mondayOf(d) { const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function weekKey(d) { return isoDate(mondayOf(d)); }
 function viewMonday() { const m=mondayOf(new Date()); m.setDate(m.getDate()+W.weekOffset*7); return m; }
@@ -755,7 +755,7 @@ function exportBackup() {
   const blob = new Blob([JSON.stringify(W,null,2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = "familie-schadt-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.href = url; a.download = "familie-schadt-backup-"+isoDate(new Date())+".json";
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
