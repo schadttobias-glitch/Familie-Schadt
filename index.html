@@ -836,7 +836,7 @@ document.addEventListener("click", function(e) {
   const onceChk = e.target.closest("[data-toggle-once]");
   if (onceChk) {
     const dw = document.getElementById("nadWrap"), dd = document.getElementById("nadateWrap");
-    if (dw && dd) { const once = onceChk.checked; dw.style.display = once?"none":"flex"; dd.style.display = once?"flex":"none"; }
+    if (dw && dd) { const once = onceChk.checked; dw.style.display = once?"none":"block"; dd.style.display = once?"flex":"none"; }
     return;
   }
   const sf2 = e.target.closest("[data-save-family]");
@@ -1259,7 +1259,8 @@ function saveRec(id) {
 function rTermine() {
   const d=DAYS[W.day], viewIso=isoDate(viewDate(W.day)), viewDt=viewDate(W.day);
   const dr=W.rec.filter(r=>recOccursOn(r, viewDt));
-  const de=W.apts.filter(a=>a.date ? (a.date===viewIso && a.day===d) : recOccursOn(a, viewDt));
+  const deRecurring=W.apts.filter(a=>!a.date && recOccursOn(a, viewDt));
+  const de=W.apts.filter(a=>a.date && a.date===viewIso && a.day===d);
   const freqSelect = (id, cur) => `<select id="${id}" data-freq-select="${id}" style="padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px;margin-bottom:6px"><option value="weekly"${!cur||cur==="weekly"?" selected":""}>Jede Woche</option><option value="biweekly"${cur==="biweekly"?" selected":""}>Alle 2 Wochen</option><option value="monthly"${cur==="monthly"?" selected":""}>Jeden Monat</option></select>`;
   const freqLabel = r => r.freq==="biweekly" ? " · alle 2 Wochen" : r.freq==="monthly" ? " · jeden Monat (Tag "+(r.dayOfMonth||1)+")" : "";
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-toggle-af="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Termin</button><button data-export-ics="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Kalender</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
@@ -1274,7 +1275,7 @@ function rTermine() {
       + `<div id="nadateWrap" style="display:none;gap:6px;margin-bottom:6px"><input type="date" id="nadate" class="fi" style="margin-bottom:0;flex:1" value="${viewIso}"><input id="nat2" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px" placeholder="Zeit"></div>`
       + `<input id="nati" class="fi" placeholder="Termin"><input id="naw" class="fi" placeholder="Wer?"><button data-save-apt="1" class="sb">Speichern</button></div>`;
   }
-  if (dr.length) {
+  if (dr.length || deRecurring.length) {
     h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;letter-spacing:1px">WIEDERHOLEND (tippen = bearbeiten)</div>`;
     dr.forEach(r => {
       if (W.recEdit===r.id) {
@@ -1287,14 +1288,17 @@ function rTermine() {
         h += `<div data-rec-edit="${r.id}" style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${r.color};cursor:pointer"><div style="flex:1"><div style="font-weight:800;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--t2)">${r.time} - ${r.who}${freqLabel(r)}</div></div><span style="font-size:10px;color:var(--t4)">&#9998;</span></div>`;
       }
     });
+    deRecurring.forEach(a => {
+      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?a.time+" - ":""}${a.who}${freqLabel(a)}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
+    });
   }
   if (de.length) {
     h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;margin-top:8px;letter-spacing:1px">EINMALIG</div>`;
     de.forEach(a => {
-      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?" "+a.time+" - ":""}${a.who}${a.date?"":freqLabel(a)}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
+      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?a.time+" - ":""}${a.who}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
     });
   }
-  if (!dr.length&&!de.length) h += `<div class="eb">Keine Termine heute</div>`;
+  if (!dr.length&&!deRecurring.length&&!de.length) h += `<div class="eb">Keine Termine heute</div>`;
   h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:14px;margin-bottom:7px">Ganze Woche</div><div class="card">`;
   DAYS.forEach((dd,di) => {
     const vd=viewDate(di), dtI = isoDate(vd);
