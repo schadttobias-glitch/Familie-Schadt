@@ -300,15 +300,15 @@ const sv = () => { try { localStorage.setItem("fs11", JSON.stringify(W)); } catc
 const ld = () => { try { const d = localStorage.getItem("fs11"); if(d) W = {...W, ...JSON.parse(d)}; } catch(e) {} };
 
 // CLOUD-SYNC (Firebase Realtime Database)
-// Nach Einrichtung eines kostenlosen Firebase-Projekts hier die Config einfuegen (siehe Anleitung).
-// Solange FIREBASE_CONFIG = null ist, laeuft die App exakt wie vorher rein lokal auf dem Geraet - kein Sync, keine Netzwerkzugriffe.
-const FIREBASE_CONFIG = null;
-/* Beispiel:
 const FIREBASE_CONFIG = {
-  apiKey: "...", authDomain: "....firebaseapp.com", databaseURL: "https://....firebasedatabase.app",
-  projectId: "...", storageBucket: "....appspot.com", messagingSenderId: "...", appId: "..."
+  apiKey: "AIzaSyCpgf8FDf2LGsOtY6aaZOX3j2X8Ck2FnbM",
+  authDomain: "familie-schadt.firebaseapp.com",
+  databaseURL: "https://familie-schadt-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "familie-schadt",
+  storageBucket: "familie-schadt.firebasestorage.app",
+  messagingSenderId: "229363507723",
+  appId: "1:229363507723:web:01bbb9cc08a550b711dd0e"
 };
-*/
 const SYNC_PATH = "sync/state";
 const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm"];
 let syncDbRef = null, syncApplyingRemote = false, syncPushTimer = null, syncLastPushedAt = 0, syncStatus = "off";
