@@ -1511,7 +1511,7 @@ function rCalendar() {
       if (inMonth && ferien) monthFerien.add(ferien.n);
       if (inMonth && feiertag) monthFeiertage.push({n:feiertag.n, d});
       const evs = eventsOnDate(d);
-      const bg = isToday ? "#764ba2" : ferien ? "#ffe0b2" : "var(--hb)";
+      const bg = isToday ? "#764ba2" : feiertag ? "#ffb74d" : ferien ? "#ffe0b2" : "var(--hb)";
       const numColor = isToday ? "white" : feiertag ? "#c62828" : ferien ? "#795548" : inMonth ? "var(--t1)" : "var(--t4)";
       const chips = evs.slice(0,2).map(e => {
         const c = personColorsForWho(e.who)[0];
