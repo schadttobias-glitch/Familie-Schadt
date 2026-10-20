@@ -1503,29 +1503,47 @@ function rCalendar() {
     h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">`
       + DAYS.map(x=>`<div style="text-align:center;font-size:9px;font-weight:800;color:var(--t3)">${x}</div>`).join("")
       + `</div>`;
-    h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">`;
-    days.forEach(d => {
-      const iso = isoDate(d);
-      const inMonth = d.getMonth()===month;
-      const isToday = iso===todayIso;
-      const ferien = ferienOnDate(d);
-      const feiertag = holidayOnDate(d);
-      if (inMonth && ferien) monthFerien.add(ferien.n);
-      if (inMonth && feiertag) monthFeiertage.push({n:feiertag.n, d});
-      const evs = eventsOnDate(d);
-      const bg = isToday ? "#764ba2" : feiertag ? "#ffb74d" : ferien ? "#ffe0b2" : "var(--hb)";
-      const numColor = isToday ? "white" : feiertag ? "#c62828" : ferien ? "#795548" : inMonth ? "var(--t1)" : "var(--t4)";
-      const chips = evs.slice(0,2).map(e => {
+    const multiDayItems = (W.imported||[]).filter(e => e.dateEnd && e.dateEnd !== e.date);
+    for (let w = 0; w < days.length; w += 7) {
+      const weekDays = days.slice(w, w+7);
+      const weekStartIso = isoDate(weekDays[0]), weekEndIso = isoDate(weekDays[6]);
+      const spans = multiDayItems.filter(e => e.date <= weekEndIso && e.dateEnd >= weekStartIso);
+      spans.forEach(e => {
+        const clipStartIso = e.date > weekStartIso ? e.date : weekStartIso;
+        const clipEndIso = e.dateEnd < weekEndIso ? e.dateEnd : weekEndIso;
+        const startCol = weekDays.findIndex(d => isoDate(d) === clipStartIso) + 1;
+        const endCol = weekDays.findIndex(d => isoDate(d) === clipEndIso) + 1;
+        const trueStart = e.date >= weekStartIso, trueEnd = e.dateEnd <= weekEndIso;
+        const radius = `${trueStart?"4px":"0"} ${trueEnd?"4px":"0"} ${trueEnd?"4px":"0"} ${trueStart?"4px":"0"}`;
         const c = personColorsForWho(e.who)[0];
-        return `<div style="background:${c};color:white;font-size:7px;line-height:1.35;border-radius:3px;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div>`;
-      }).join("");
-      const more = evs.length > 2 ? `<div style="font-size:7px;font-weight:700;color:${isToday?"white":"var(--t3)"}">+${evs.length-2}</div>` : "";
-      h += `<div data-cal-jump="${iso}" style="min-height:48px;min-width:0;overflow:hidden;padding:3px 2px;display:flex;flex-direction:column;align-items:center;border-radius:8px;cursor:pointer;background:${bg}">`
-        + `<span style="font-size:10px;font-weight:${isToday||feiertag?"800":"600"};color:${numColor};margin-bottom:2px">${d.getDate()}</span>`
-        + `<div style="display:flex;flex-direction:column;gap:1px;width:100%">${chips}${more}</div>`
-        + `</div>`;
-    });
-    h += `</div>`;
+        h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">`
+          + `<div data-cal-jump="${clipStartIso}" style="grid-column:${startCol} / span ${endCol-startCol+1};min-width:0;background:${c};color:white;font-size:7px;line-height:1.6;padding:0 4px;border-radius:${radius};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">${trueStart?"&#128241; "+esc(e.title):"&nbsp;"}</div>`
+          + `</div>`;
+      });
+      h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">`;
+      weekDays.forEach(d => {
+        const iso = isoDate(d);
+        const inMonth = d.getMonth()===month;
+        const isToday = iso===todayIso;
+        const ferien = ferienOnDate(d);
+        const feiertag = holidayOnDate(d);
+        if (inMonth && ferien) monthFerien.add(ferien.n);
+        if (inMonth && feiertag) monthFeiertage.push({n:feiertag.n, d});
+        const evs = eventsOnDate(d).filter(e => !(e.dateEnd && e.dateEnd !== e.date));
+        const bg = isToday ? "#764ba2" : feiertag ? "#ffb74d" : ferien ? "#ffe0b2" : "var(--hb)";
+        const numColor = isToday ? "white" : feiertag ? "#c62828" : ferien ? "#795548" : inMonth ? "var(--t1)" : "var(--t4)";
+        const chips = evs.slice(0,2).map(e => {
+          const c = personColorsForWho(e.who)[0];
+          return `<div style="background:${c};color:white;font-size:7px;line-height:1.35;border-radius:3px;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div>`;
+        }).join("");
+        const more = evs.length > 2 ? `<div style="font-size:7px;font-weight:700;color:${isToday?"white":"var(--t3)"}">+${evs.length-2}</div>` : "";
+        h += `<div data-cal-jump="${iso}" style="min-height:48px;min-width:0;overflow:hidden;padding:3px 2px;display:flex;flex-direction:column;align-items:center;border-radius:8px;cursor:pointer;background:${bg}">`
+          + `<span style="font-size:10px;font-weight:${isToday||feiertag?"800":"600"};color:${numColor};margin-bottom:2px">${d.getDate()}</span>`
+          + `<div style="display:flex;flex-direction:column;gap:1px;width:100%">${chips}${more}</div>`
+          + `</div>`;
+      });
+      h += `</div>`;
+    }
   } else {
     h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`
       + `<b style="font-size:13px;color:var(--t1)">Diese Woche: ${fmtDshort(viewMonday())} - ${fmtDshort(viewDate(6))}</b>`
