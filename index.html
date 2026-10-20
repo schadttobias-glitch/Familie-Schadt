@@ -361,7 +361,8 @@ const FIREBASE_CONFIG = {
   appId: "1:229363507723:web:01bbb9cc08a550b711dd0e"
 };
 const SYNC_PATH = "sync/3cvwq26saehh370vawcftmi2/state";
-const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm","calMonthOffset","calView","quickAddDate"];
+const IMPORTED_EVA_PATH = "sync/3cvwq26saehh370vawcftmi2/importedEva";
+const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm","calMonthOffset","calView","quickAddDate","importedEva"];
 let syncDbRef = null, syncApplyingRemote = false, syncPushTimer = null, syncLastPushedAt = 0, syncStatus = "off";
 function syncableState() {
   const out = {};
@@ -401,6 +402,11 @@ async function initCloudSync() {
     firebase.initializeApp(FIREBASE_CONFIG);
     await firebase.auth().signInAnonymously();
     syncDbRef = firebase.database().ref(SYNC_PATH);
+    firebase.database().ref(IMPORTED_EVA_PATH).on("value", snap => {
+      const v = snap.val();
+      W.importedEva = (v && Array.isArray(v.items)) ? v.items : [];
+      renderHeader(); renderDays(); renderCurrent();
+    });
     syncDbRef.on("value", snap => {
       const remote = snap.val();
       if (!remote || !remote.updatedAt || !remote.data) { syncStatus = "synced"; renderSyncBadge(); return; }

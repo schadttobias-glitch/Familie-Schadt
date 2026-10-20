@@ -3,7 +3,7 @@
 // gemeinsamen Zustand). Laeuft nur in eine Richtung: iPhone -> App.
 
 const ical = require("node-ical");
-const { patchState } = require("./_firebase");
+const { writeImportedEva } = require("./_firebase");
 
 const SOURCE_PERSON = "Eva";
 const ENV_VAR = "IMPORT_ICS_URL_EVA";
@@ -67,7 +67,7 @@ async function importEvaIntoFirebase() {
 
   out.sort((a, b) => (a.date + "T" + (a.time || "00:00")).localeCompare(b.date + "T" + (b.time || "00:00")));
 
-  await patchState({ importedEva: out, importedEvaUpdatedAt: Date.now() });
+  await writeImportedEva(out);
   return { count: out.length, updatedAt: Date.now() };
 }
 

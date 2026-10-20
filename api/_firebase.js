@@ -2,7 +2,9 @@
 
 const FIREBASE_API_KEY = "AIzaSyCpgf8FDf2LGsOtY6aaZOX3j2X8Ck2FnbM";
 const DB_URL = "https://familie-schadt-default-rtdb.europe-west1.firebasedatabase.app";
-const SYNC_PATH = "sync/3cvwq26saehh370vawcftmi2/state";
+const SYNC_ROOT = "sync/3cvwq26saehh370vawcftmi2";
+const SYNC_PATH = SYNC_ROOT + "/state";
+const IMPORTED_EVA_PATH = SYNC_ROOT + "/importedEva";
 
 let cachedToken = null;
 let cachedTokenExp = 0;
@@ -22,26 +24,31 @@ async function getIdToken() {
   return cachedToken;
 }
 
+// Die App speichert ihren Zustand als { updatedAt, data: {...} } unter
+// SYNC_PATH (siehe pushCloudSync() in index.html) -- wir lesen hier die
+// eigentlichen Felder aus "data".
 async function fetchState() {
   const token = await getIdToken();
   const res = await fetch(`${DB_URL}/${SYNC_PATH}.json?auth=${token}`);
   if (!res.ok) throw new Error("Datenbank-Lesefehler: " + res.status);
-  const data = await res.json();
-  return data || {};
+  const raw = await res.json();
+  return (raw && raw.data) || {};
 }
 
-// Flacher Merge auf Feld-Ebene von SYNC_PATH (ueberschreibt nur die angegebenen
-// Top-Level-Felder, laesst alles andere unberuehrt -- sicher fuer gleichzeitige
-// Aenderungen durch Geraete der Familie).
-async function patchState(partial) {
+// Importierte Eva-Termine leben in einem EIGENEN Pfad, getrennt von SYNC_PATH.
+// Grund: der Client ueberschreibt SYNC_PATH bei jeder lokalen Aenderung komplett
+// (volles .set()). Laege importedEva dort, koennte ein Geraet mit veraltetem
+// lokalem Stand einen frischen Server-Import versehentlich wieder loeschen.
+// Der eigene Pfad wird vom Client nur gelesen, nie beschrieben.
+async function writeImportedEva(items) {
   const token = await getIdToken();
-  const res = await fetch(`${DB_URL}/${SYNC_PATH}.json?auth=${token}`, {
-    method: "PATCH",
+  const res = await fetch(`${DB_URL}/${IMPORTED_EVA_PATH}.json?auth=${token}`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(partial),
+    body: JSON.stringify({ items, updatedAt: Date.now() }),
   });
   if (!res.ok) throw new Error("Datenbank-Schreibfehler: " + res.status);
   return res.json();
 }
 
-module.exports = { DB_URL, SYNC_PATH, getIdToken, fetchState, patchState };
+module.exports = { DB_URL, SYNC_PATH, IMPORTED_EVA_PATH, getIdToken, fetchState, writeImportedEva };
