@@ -1515,7 +1515,7 @@ function rCalendar() {
         return `<div style="background:${c};color:white;font-size:7px;line-height:1.35;border-radius:3px;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div>`;
       }).join("");
       const more = evs.length > 2 ? `<div style="font-size:7px;font-weight:700;color:${isToday?"white":"var(--t3)"}">+${evs.length-2}</div>` : "";
-      h += `<div data-cal-jump="${iso}" style="min-height:48px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;border-radius:8px;cursor:pointer;background:${bg}">`
+      h += `<div data-cal-jump="${iso}" style="min-height:48px;min-width:0;overflow:hidden;padding:3px 2px;display:flex;flex-direction:column;align-items:center;border-radius:8px;cursor:pointer;background:${bg}">`
         + `<span style="font-size:10px;font-weight:${isToday||feiertag?"800":"600"};color:${numColor};margin-bottom:2px">${d.getDate()}</span>`
         + `<div style="display:flex;flex-direction:column;gap:1px;width:100%">${chips}${more}</div>`
         + `</div>`;
