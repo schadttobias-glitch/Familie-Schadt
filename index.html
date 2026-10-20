@@ -413,6 +413,7 @@ async function initCloudSync() {
       if (remote.updatedAt <= syncLastPushedAt) { syncStatus = "synced"; renderSyncBadge(); return; }
       syncApplyingRemote = true;
       Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
+      migrateHistIds();
       syncLastPushedAt = remote.updatedAt;
       try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
       syncApplyingRemote = false;
@@ -556,10 +557,17 @@ function migrateHistIds() {
   (W.hist||[]).forEach((e, i) => { if (e.id == null) { e.id = Date.now()+i; changed = true; } });
   if (changed) sv();
 }
+const PLAN_RID = [
+  {f:"mb", m:"nu", a:"la", s:"jb"},
+  {f:"pf", m:"hr", a:"ss", s:"ae2"},
+  {f:"po", m:"au", a:"ff2", s:"mq"},
+  {f:"ae", m:"li", a:"ok", s:"bk"},
+  {f:"sb", m:"pi", a:"om", s:"os"},
+  {f:"pa", m:"ng", a:"wr", s:"pc"},
+  {f:"wa", m:"br", a:"gs", s:"qb"},
+];
 function findDefaultRecipeId(i, slot) {
-  const name = PLAN[i][slot], kat = SLOT_KAT[slot];
-  const r = RECIPES[kat] && RECIPES[kat].items.find(x => x.name === name);
-  return r ? r.id : null;
+  return (PLAN_RID[i] && PLAN_RID[i][slot]) || null;
 }
 function scaleIngredient(s, f) {
   if (f === 1) return s;
@@ -1371,6 +1379,7 @@ function addTask(kid) {
 }
 
 function rSterne() {
+  migrateHistIds();
   const kid=W.sk, st=W.stars[kid]||0, tot=W.total[kid]||0;
   const tasks=W.tasks[kid]||[];
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Belohnungssystem</div>`;
