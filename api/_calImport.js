@@ -32,11 +32,22 @@ function mapInstance(instance, id, personName) {
   const tz = (instance.start && instance.start.tz) || "Europe/Berlin";
   const isAllDay = Boolean(instance.isFullDay) || Boolean(instance.start && instance.start.dateOnly);
   const lp = localParts(instance.start, tz);
+
+  let dateEnd;
+  if (instance.end) {
+    // Ganztaegige Termine: DTEND ist exklusiv (der Tag NACH dem letzten Tag) -- einen Tag abziehen.
+    const endForCalc = isAllDay ? new Date(instance.end.getTime() - 86400000) : instance.end;
+    const endTz = (instance.end && instance.end.tz) || tz;
+    const lpEnd = localParts(endForCalc, endTz);
+    if (lpEnd.date > lp.date) dateEnd = lpEnd.date;
+  }
+
   return {
     id,
     title: instance.summary || "Termin",
     who: personName,
     date: lp.date,
+    ...(dateEnd ? { dateEnd } : {}),
     time: isAllDay ? undefined : lp.time,
     imported: true,
   };

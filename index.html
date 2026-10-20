@@ -474,13 +474,16 @@ function personColorsForWho(who) {
   const matched = all.filter(p => w.includes(p.name)).map(p => PERSON_COLORS[p.id] || "#999");
   return matched.length ? matched : ["#999"];
 }
+function importedOnDate(iso) {
+  return (W.imported||[]).filter(e => iso >= e.date && iso <= (e.dateEnd || e.date));
+}
 function eventsOnDate(date) {
   const iso = isoDate(date);
   return [
     ...W.rec.filter(r => recOccursOn(r, date)),
     ...W.apts.filter(a => !a.date && recOccursOn(a, date)),
     ...W.apts.filter(a => a.date === iso),
-    ...(W.imported||[]).filter(e => e.date === iso)
+    ...importedOnDate(iso)
   ];
 }
 function easterSunday(year) {
@@ -1533,7 +1536,7 @@ function rCalendar() {
       if (ferien) monthFerien.add(ferien.n);
       if (feiertag) monthFeiertage.push({n:feiertag.n, d:vd});
       const isToday = dtI===todayIso;
-      const all=[...W.rec.filter(r=>recOccursOn(r, vd)),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):recOccursOn(a, vd)),...(W.imported||[]).filter(e=>e.date===dtI)];
+      const all=[...W.rec.filter(r=>recOccursOn(r, vd)),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):recOccursOn(a, vd)),...importedOnDate(dtI)];
       h += `<div data-cal-jump="${dtI}" class="wr" style="cursor:pointer;border-radius:8px;${ferien?"background:#ffe0b230;":isToday?"background:#764ba215;":""}">`
         + `<div style="width:28px;flex-shrink:0;padding-top:2px"><div style="font-weight:900;font-size:11px;color:${feiertag?"#c62828":"#764ba2"}">${dd}</div><div style="font-size:8px;color:var(--t3)">${fmtDshort(vd)}</div></div>`
         + `<div class="wt">`;
@@ -1563,7 +1566,7 @@ function rTermine() {
   const dr=W.rec.filter(r=>recOccursOn(r, viewDt));
   const deRecurring=W.apts.filter(a=>!a.date && recOccursOn(a, viewDt));
   const de=W.apts.filter(a=>a.date && a.date===viewIso && a.day===d);
-  const imp=(W.imported||[]).filter(e=>e.date===viewIso);
+  const imp=importedOnDate(viewIso);
   const freqSelect = (id, cur) => `<select id="${id}" data-freq-select="${id}" style="padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px;margin-bottom:6px"><option value="weekly"${!cur||cur==="weekly"?" selected":""}>Jede Woche</option><option value="biweekly"${cur==="biweekly"?" selected":""}>Alle 2 Wochen</option><option value="monthly"${cur==="monthly"?" selected":""}>Jeden Monat</option></select>`;
   const freqLabel = r => r.freq==="biweekly" ? " · alle 2 Wochen" : r.freq==="monthly" ? " · jeden Monat (Tag "+(r.dayOfMonth||1)+")" : "";
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-export-ics="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Export</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
