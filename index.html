@@ -241,49 +241,49 @@ const SHOP = [
 const SLOT_KAT = {f:"fruehstueck", m:"mittagessen", a:"abendessen", s:"snack"};
 const RECIPES = {
   fruehstueck: {label:"Fruehstueck", items:[
-    {id:"mb", name:"Milchbrei mit Banane", kc:360, p:11, vc:12, fe:3, ca:280, zutaten:["500ml Vollmilch","100g Griess","2 Bananen","2 EL Honig","1 TL Zimt","4 EL Aliana Leinoel","Beeren"]},
-    {id:"pf", name:"Obstpfannkuchen", kc:380, p:12, vc:30, fe:2, ca:200, zutaten:["250g Dinkelmehl","2 Eier","300ml Milch","1 TL Backpulver","Butter","Erdbeeren, Banane, Blaubeeren","Joghurt zum Dippen"]},
-    {id:"po", name:"Porridge mit Apfel und Nuessen", kc:370, p:11, vc:10, fe:4, ca:160, zutaten:["400g Haferflocken","800ml Milch","2 Aepfel gerieben","4 EL Walnuesse","2 EL Honig","1 TL Zimt","4 EL Aliana Leinoel"]},
-    {id:"ae", name:"Toast mit Avocado und Ei", kc:400, p:16, vc:12, fe:3, ca:120, zutaten:["8 Scheiben Vollkorntoast","2 Avocados","4 Eier","Zitrone, Salz","Kresse"]},
-    {id:"sb", name:"Smoothie-Bowl", kc:340, p:10, vc:55, fe:4, ca:200, zutaten:["200g TK-Mango","100g Spinat","2 gefrorene Bananen","150ml Kokosmilch","Granola, Beeren","2 EL Aliana Leinoel"]},
-    {id:"pa", name:"Pancakes mit Beeren-Sauce", kc:460, p:14, vc:25, fe:3, ca:200, zutaten:["250g Mehl","2 TL Backpulver","2 Eier","300ml Buttermilch","200g Beeren + Honig fuer Sauce"]},
-    {id:"wa", name:"Dinkel-Waffeln mit Apfelmus", kc:440, p:13, vc:5, fe:3, ca:220, zutaten:["300g Dinkelmehl","3 Eier","250ml Milch","100g Butter","2 EL Honig","Apfelmus"]},
-    {id:"mue", name:"Bircher-Muesli ueber Nacht", kc:390, p:13, vc:18, fe:3, ca:250, zutaten:["400g Haferflocken","600ml Milch","200g Joghurt","2 EL Honig","2 Aepfel gerieben","Beeren","2 EL Aliana Leinoel"]},
-    {id:"rk", name:"Ruehrei mit Gemuese", kc:420, p:18, vc:22, fe:3, ca:120, zutaten:["8 Eier","4 EL Milch","1 Paprika","Schnittlauch, Salz","Butter","Toast"]},
-    {id:"ef", name:"Dinkel-Eierkuchen", kc:350, p:11, vc:28, fe:2, ca:180, zutaten:["200g Dinkelmehl","2 Eier","400ml Milch","Butter","Frische Fruechte","Honig"]},
+    {id:"mb", name:"Milchbrei mit Banane", kc:360, p:11, vc:12, fe:3, ca:280, zutaten:["800ml Vollmilch","160g Griess","3 Bananen","3 EL Honig","1 TL Zimt","4 EL Aliana Leinoel","Beeren nach Wunsch"], zubereitung:["Milch in einem Topf erhitzen, aber nicht kochen lassen.","Griess unter Ruehren einstreuen und bei milder Hitze 3-4 Minuten quellen lassen, dabei staendig ruehren.","Vom Herd nehmen, Zimt und Honig unterruehren.","Bananen in Scheiben schneiden und den Brei damit, Beeren und Leinoel toppen."]},
+    {id:"pf", name:"Obstpfannkuchen", kc:380, p:12, vc:30, fe:2, ca:200, zutaten:["320g Dinkelmehl","3 Eier","400ml Milch","1 TL Backpulver","Butter zum Braten","Erdbeeren, Banane, Blaubeeren","Joghurt zum Dippen"], zubereitung:["Mehl, Backpulver, Eier und Milch zu einem glatten Teig verruehren.","Butter in einer Pfanne erhitzen, portionsweise kleine Pfannkuchen goldbraun backen.","Obst waschen und klein schneiden.","Pfannkuchen mit dem Obst und Joghurt anrichten."]},
+    {id:"po", name:"Porridge mit Apfel und Nuessen", kc:370, p:11, vc:10, fe:4, ca:160, zutaten:["480g Haferflocken","1L Milch","2 Aepfel gerieben","4 EL Walnuesse","2 EL Honig","1 TL Zimt","4 EL Aliana Leinoel"], zubereitung:["Haferflocken mit der Milch in einem Topf aufkochen.","Bei milder Hitze 5 Minuten unter Ruehren quellen lassen.","Geriebenen Apfel, Zimt und Honig unterruehren.","Mit gehackten Walnuessen und Leinoel bestreut servieren."]},
+    {id:"ae", name:"Toast mit Avocado und Ei", kc:400, p:16, vc:12, fe:3, ca:120, zutaten:["8 Scheiben Vollkorntoast","3 Avocados","8 Eier","Zitrone, Salz, Pfeffer","Kresse"], zubereitung:["Toast roesten.","Eier wahlweise pochieren oder als Spiegelei braten.","Avocado zerdruecken, mit Zitrone und Salz wuerzen und auf dem Toast verteilen.","Mit dem Ei toppen und Kresse darueberstreuen."]},
+    {id:"sb", name:"Smoothie-Bowl", kc:340, p:10, vc:55, fe:4, ca:200, zutaten:["350g TK-Mango","100g Spinat","4 gefrorene Bananen","250ml Kokosmilch","Granola, Beeren","2 EL Aliana Leinoel"], zubereitung:["Mango, Spinat, Bananen und Kokosmilch im Mixer cremig puerieren.","In Schalen verteilen.","Mit Granola, Beeren und Leinoel toppen."]},
+    {id:"pa", name:"Pancakes mit Beeren-Sauce", kc:460, p:14, vc:25, fe:3, ca:200, zutaten:["320g Mehl","2 TL Backpulver","3 Eier","400ml Buttermilch","300g Beeren + Honig fuer die Sauce"], zubereitung:["Mehl, Backpulver, Eier und Buttermilch zu einem glatten Teig verruehren.","In einer Pfanne kleine Pancakes goldbraun backen.","Beeren mit etwas Honig kurz erwaermen, bis eine Sauce entsteht.","Pancakes stapeln und mit der Beerensauce servieren."]},
+    {id:"wa", name:"Dinkel-Waffeln mit Apfelmus", kc:440, p:13, vc:5, fe:3, ca:220, zutaten:["350g Dinkelmehl","3 Eier","350ml Milch","100g Butter","2 EL Honig","500g Apfelmus"], zubereitung:["Butter schmelzen und mit Eiern, Milch und Honig verruehren.","Mehl unterruehren, bis ein glatter Teig entsteht.","Im Waffeleisen goldbraun backen.","Mit Apfelmus servieren."]},
+    {id:"mue", name:"Bircher-Muesli ueber Nacht", kc:390, p:13, vc:18, fe:3, ca:250, zutaten:["400g Haferflocken","600ml Milch","250g Joghurt","2 EL Honig","2 Aepfel gerieben","Beeren","2 EL Aliana Leinoel"], zubereitung:["Haferflocken mit Milch, Joghurt und Honig vermengen.","Geriebenen Apfel unterruehren.","Abgedeckt ueber Nacht im Kuehlschrank quellen lassen.","Am Morgen mit Beeren und Leinoel toppen."]},
+    {id:"rk", name:"Ruehrei mit Gemuese", kc:420, p:18, vc:22, fe:3, ca:120, zutaten:["10 Eier","4 EL Milch","1 Paprika","Schnittlauch, Salz, Pfeffer","Butter","Toast"], zubereitung:["Eier mit Milch verquirlen, salzen und pfeffern.","Paprika wuerfeln und in Butter kurz anduensten.","Eimasse dazugeben und bei milder Hitze stocken lassen, dabei stetig ruehren.","Mit Schnittlauch bestreuen und mit Toast servieren."]},
+    {id:"ef", name:"Dinkel-Eierkuchen", kc:350, p:11, vc:28, fe:2, ca:180, zutaten:["280g Dinkelmehl","3 Eier","450ml Milch","Butter zum Braten","Frische Fruechte","Honig"], zubereitung:["Mehl, Eier und Milch zu einem glatten Teig verruehren.","In Butter duenne Eierkuchen goldbraun backen.","Mit frischen Fruechten fuellen oder belegen.","Mit Honig betraeufeln und servieren."]},
   ]},
   mittagessen: {label:"Mittagessen", items:[
-    {id:"nu", name:"Nudeln mit Tomaten-Gemuesesosse", kc:480, p:18, vc:35, fe:4, ca:160, zutaten:["400g Vollkornnudeln","2 Dosen Tomaten","1 Zucchini","1 Paprika","1 Karotte","Oregano, Olivenoel","Parmesan"]},
-    {id:"hr", name:"Haehnchen-Reis-Topf", kc:500, p:32, vc:40, fe:3, ca:120, zutaten:["400g Haehnchenbrust","300g Reis","2 Karotten","1 Zucchini","100g Erbsen TK","600ml Bruehe"]},
-    {id:"au", name:"Gemuese-Nudel-Auflauf", kc:490, p:22, vc:42, fe:3, ca:320, zutaten:["400g Nudeln","2 Zucchini","2 Paprika","200g Mais","400ml Sahne","200g Kaese gerieben","2 Eier"]},
-    {id:"li", name:"Linsen-Gemuese-Suppe", kc:460, p:22, vc:22, fe:6, ca:140, zutaten:["250g rote Linsen","2 Karotten","2 Kartoffeln","1 Dose Tomaten","800ml Bruehe","1 TL Kurkuma","4 EL Aliana Leinoel"]},
-    {id:"pi", name:"Kinderpizza selbstgemacht", kc:520, p:22, vc:30, fe:4, ca:320, zutaten:["400g Dinkelmehl","1 Paeckchen Trockenhefe","280ml Wasser","Tomatensosse, Mozzarella","Mais, Paprika"]},
-    {id:"ng", name:"Haehnchen-Nuggets selbstgemacht", kc:540, p:36, vc:20, fe:3, ca:120, zutaten:["600g Haehnchenbrust","2 Eier","100g Paniermehl","50g Parmesan","Paprikapulver"]},
-    {id:"br", name:"Sonntagsbraten", kc:580, p:42, vc:28, fe:5, ca:140, zutaten:["1 Haehnchen 1.8kg","800g Kartoffeln","400g gruene Bohnen","Rosmarin, Thymian","500ml Bruehe"]},
-    {id:"ff2", name:"Mini-Fischfrikadellen", kc:400, p:26, vc:15, fe:2, ca:140, zutaten:["400g Lachsfilet","300g Kartoffelpueree","1 Ei","2 EL Haferflocken","Dill, Zitrone"]},
-    {id:"hg", name:"Haehnchen-Gemuese-Pfanne mit Quinoa", kc:520, p:38, vc:45, fe:4, ca:110, zutaten:["500g Haehnchenbrust","300g Quinoa","2 Paprika","200g Zucchini","Sojasosse, Sesam"]},
-    {id:"wr", name:"Gemuese-Wraps mit Hummus", kc:400, p:16, vc:35, fe:4, ca:140, zutaten:["8 Vollkorn-Wraps","400g Hummus","Gurke, Tomaten, Paprika","Rucola, Kaese"]},
-    {id:"ss", name:"Sternchennudel-Suppe", kc:350, p:12, vc:28, fe:3, ca:140, zutaten:["2 Dosen Tomaten","500ml Gemuesebruehe","100g Sternchennudeln","Basilikum, Parmesan"]},
+    {id:"nu", name:"Nudeln mit Tomaten-Gemuesesosse", kc:480, p:18, vc:35, fe:4, ca:160, zutaten:["500g Vollkornnudeln","2 Dosen Tomaten","1 Zucchini","1 Paprika","1 Karotte","Oregano, Olivenoel, Salz","Parmesan"], zubereitung:["Nudeln nach Packungsangabe in Salzwasser kochen.","Gemuese wuerfeln und in Olivenoel anduensten.","Tomaten dazugeben, mit Oregano und Salz wuerzen und 15 Minuten koecheln lassen.","Sosse mit den Nudeln vermengen und mit Parmesan bestreuen."]},
+    {id:"hr", name:"Haehnchen-Reis-Topf", kc:500, p:32, vc:40, fe:3, ca:120, zutaten:["600g Haehnchenbrust","360g Reis","2 Karotten","1 Zucchini","150g Erbsen TK","800ml Bruehe"], zubereitung:["Haehnchen wuerfeln und scharf anbraten.","Karotten und Zucchini wuerfeln, dazugeben und kurz mitbraten.","Reis und Bruehe dazugeben, aufkochen und zugedeckt 15-18 Minuten garen.","Erbsen untermischen und 5 Minuten weitergaren."]},
+    {id:"au", name:"Gemuese-Nudel-Auflauf", kc:490, p:22, vc:42, fe:3, ca:320, zutaten:["500g Nudeln","2 Zucchini","2 Paprika","250g Mais","400ml Sahne","250g Kaese gerieben","3 Eier"], zubereitung:["Nudeln bissfest kochen und mit dem Gemuese in eine Auflaufform geben.","Sahne mit Eiern und der Haelfte des Kaeses verquirlen, salzen.","Ueber die Nudel-Gemuese-Mischung giessen und mit restlichem Kaese bestreuen.","Bei 180 Grad ca. 25 Minuten ueberbacken."]},
+    {id:"li", name:"Linsen-Gemuese-Suppe", kc:460, p:22, vc:22, fe:6, ca:140, zutaten:["300g rote Linsen","2 Karotten","2 Kartoffeln","1 Dose Tomaten","1L Bruehe","1 TL Kurkuma","4 EL Aliana Leinoel"], zubereitung:["Gemuese wuerfeln, mit den Linsen und der Bruehe aufkochen.","Tomaten und Kurkuma dazugeben.","20 Minuten koecheln lassen, bis Linsen und Gemuese weich sind.","Mit dem Stabmixer grob puerieren und mit Leinoel servieren."]},
+    {id:"pi", name:"Kinderpizza selbstgemacht", kc:520, p:22, vc:30, fe:4, ca:320, zutaten:["450g Dinkelmehl","1 Paeckchen Trockenhefe","300ml Wasser","1 EL Olivenoel","Tomatensosse, Mozzarella","Mais, Paprika"], zubereitung:["Mehl, Hefe, Wasser, Olivenoel und etwas Salz zu einem glatten Teig verkneten.","30-60 Minuten an einem warmen Ort gehen lassen.","Teig ausrollen, mit Tomatensosse bestreichen und mit Mozzarella und Belag versehen.","Bei 220 Grad ca. 12-15 Minuten backen."]},
+    {id:"ng", name:"Haehnchen-Nuggets selbstgemacht", kc:540, p:36, vc:20, fe:3, ca:120, zutaten:["700g Haehnchenbrust","2 Eier","120g Paniermehl","50g Parmesan","Paprikapulver, Salz"], zubereitung:["Haehnchen in mundgerechte Stuecke schneiden.","Paniermehl mit Parmesan und Gewuerzen mischen.","Stuecke erst in Ei, dann in der Panade wenden.","Im Ofen bei 200 Grad ca. 15-18 Minuten backen, bis goldbraun."]},
+    {id:"br", name:"Sonntagsbraten", kc:580, p:42, vc:28, fe:5, ca:140, zutaten:["1 Haehnchen ca. 1.8kg","1kg Kartoffeln","500g gruene Bohnen","Rosmarin, Thymian, Salz","500ml Bruehe"], zubereitung:["Haehnchen wuerzen und bei 180 Grad ca. 70-80 Minuten braten.","Kartoffeln schaelen, halbieren und die letzten 40 Minuten mit in den Ofen geben.","Bohnen in Salzwasser bissfest kochen.","Bratensaft mit Bruehe aufgiessen und als Sosse abschmecken."]},
+    {id:"ff2", name:"Mini-Fischfrikadellen", kc:400, p:26, vc:15, fe:2, ca:140, zutaten:["500g Lachsfilet","400g Kartoffelpueree","2 Eier","3 EL Haferflocken","Dill, Zitrone, Salz"], zubereitung:["Lachs klein wuerfeln und mit Kartoffelpueree, Ei, Haferflocken, Dill und Zitrone vermengen.","Mit den Haenden kleine Frikadellen formen.","In einer Pfanne mit etwas Oel von beiden Seiten goldbraun braten."]},
+    {id:"hg", name:"Haehnchen-Gemuese-Pfanne mit Quinoa", kc:520, p:38, vc:45, fe:4, ca:110, zutaten:["500g Haehnchenbrust","360g Quinoa","2 Paprika","200g Zucchini","Sojasosse, Sesam"], zubereitung:["Quinoa nach Packungsangabe kochen.","Haehnchen wuerfeln und scharf anbraten.","Gemuese dazugeben und einige Minuten mitbraten.","Mit Sojasosse abschmecken, Quinoa untermischen und mit Sesam bestreuen."]},
+    {id:"wr", name:"Gemuese-Wraps mit Hummus", kc:400, p:16, vc:35, fe:4, ca:140, zutaten:["8 Vollkorn-Wraps","400g Hummus","Gurke, Tomaten, Paprika","Rucola, Kaese"], zubereitung:["Gemuese in Streifen schneiden.","Wraps mit Hummus bestreichen.","Mit Gemuese, Rucola und Kaese belegen und fest einrollen."]},
+    {id:"ss", name:"Sternchennudel-Suppe", kc:350, p:12, vc:28, fe:3, ca:140, zutaten:["2 Dosen Tomaten","700ml Gemuesebruehe","150g Sternchennudeln","Basilikum, Parmesan"], zubereitung:["Tomaten mit der Bruehe aufkochen und fein puerieren.","Sternchennudeln dazugeben und nach Packungsangabe garen.","Mit Basilikum und Parmesan servieren."]},
   ]},
   abendessen: {label:"Abendessen", items:[
-    {id:"la", name:"Lachs-Sticks mit Kartoffelpueree", kc:420, p:28, vc:18, fe:2, ca:180, zutaten:["400g Lachsfilet","100g Paniermehl","2 Eier","Dill, Zitrone","600g Kartoffeln","Milch + Butter","2 EL Aliana Leinoel"]},
-    {id:"om", name:"Gemuese-Omelett", kc:360, p:20, vc:22, fe:3, ca:180, zutaten:["8 Eier","4 EL Milch","100g Mais","100g Erbsen","1 Paprika","Kaese gerieben"]},
-    {id:"ok", name:"Ofenkartoffeln mit Quark", kc:380, p:18, vc:25, fe:2, ca:200, zutaten:["8 Kartoffeln","400g Magerquark","100ml Milch","Schnittlauch","Mais, Paprika","2 EL Aliana Leinoel"]},
-    {id:"gs", name:"Bunte Gemuesesuppe", kc:320, p:14, vc:30, fe:4, ca:140, zutaten:["Kartoffeln, Karotten, Erbsen, Lauch","1.2L Gemuesebruehe","Petersilie","2 EL Aliana Leinoel"]},
-    {id:"fb", name:"Fischstaebchen mit Kartoffeln", kc:430, p:24, vc:20, fe:2, ca:130, zutaten:["500g Weissfisch","100g Paniermehl","2 Eier","600g Kartoffeln","Joghurt-Dip","Salat"]},
-    {id:"gk", name:"Gemuese-Curry mit Reis", kc:460, p:16, vc:42, fe:4, ca:130, zutaten:["400g Vollkornreis","1 Dose Kokosmilch","1 Dose Kichererbsen","2 Paprika, 1 Zucchini","2 EL Currypulver mild"]},
-    {id:"sp", name:"Spinat-Ricotta-Pasta", kc:440, p:20, vc:30, fe:4, ca:280, zutaten:["400g Vollkornnudeln","250g Ricotta","200g Spinat","2 Knoblauchzehen","Parmesan"]},
-    {id:"bb", name:"Brotzeit-Platte", kc:350, p:18, vc:20, fe:2, ca:250, zutaten:["Vollkornbrot","Kaese, Aufschnitt","Rohkost: Gurke, Paprika, Tomaten","Butter, Quark","Aliana Leinoel"]},
+    {id:"la", name:"Lachs-Sticks mit Kartoffelpueree", kc:420, p:28, vc:18, fe:2, ca:180, zutaten:["500g Lachsfilet","100g Paniermehl","2 Eier","Dill, Zitrone","700g Kartoffeln","Milch + Butter","2 EL Aliana Leinoel"], zubereitung:["Lachs in Stuecke schneiden, in Ei und Paniermehl wenden.","In der Pfanne goldbraun braten.","Kartoffeln kochen und mit Milch und Butter zu Pueree stampfen, mit Leinoel verfeinern.","Lachs-Sticks mit dem Pueree servieren."]},
+    {id:"om", name:"Gemuese-Omelett", kc:360, p:20, vc:22, fe:3, ca:180, zutaten:["10 Eier","4 EL Milch","150g Mais","150g Erbsen","1 Paprika","Kaese gerieben"], zubereitung:["Eier mit Milch verquirlen, salzen.","Gemuese in einer Pfanne kurz anduensten.","Eimasse darueber giessen und bei milder Hitze stocken lassen.","Mit Kaese bestreuen, zusammenklappen und servieren."]},
+    {id:"ok", name:"Ofenkartoffeln mit Quark", kc:380, p:18, vc:25, fe:2, ca:200, zutaten:["8 grosse Kartoffeln","400g Magerquark","100ml Milch","Schnittlauch, Salz","Mais, Paprika","2 EL Aliana Leinoel"], zubereitung:["Kartoffeln waschen, einstechen und bei 200 Grad ca. 50-60 Minuten backen.","Quark mit Milch glatt ruehren, salzen und mit Schnittlauch verfeinern.","Kartoffeln aufschneiden und mit dem Kraeuterquark, Mais und Paprika fuellen.","Mit Leinoel betraeufeln."]},
+    {id:"gs", name:"Bunte Gemuesesuppe", kc:320, p:14, vc:30, fe:4, ca:140, zutaten:["Kartoffeln, Karotten, Erbsen, Lauch (ca. 800g)","1.5L Gemuesebruehe","Petersilie","2 EL Aliana Leinoel"], zubereitung:["Gemuese putzen und wuerfeln.","Mit der Bruehe aufkochen und 20 Minuten koecheln lassen, bis alles weich ist.","Nach Belieben teilweise puerieren.","Mit Petersilie und Leinoel servieren."]},
+    {id:"fb", name:"Fischstaebchen mit Kartoffeln", kc:430, p:24, vc:20, fe:2, ca:130, zutaten:["500g Weissfisch","100g Paniermehl","2 Eier","700g Kartoffeln","Joghurt-Dip","Salat"], zubereitung:["Fisch in Stuecke schneiden, in Ei und Paniermehl wenden.","Im Ofen bei 200 Grad ca. 15 Minuten backen.","Kartoffeln kochen oder als Wedges im Ofen garen.","Mit Joghurt-Dip und Salat servieren."]},
+    {id:"gk", name:"Gemuese-Curry mit Reis", kc:460, p:16, vc:42, fe:4, ca:130, zutaten:["450g Vollkornreis","1 Dose Kokosmilch","1 Dose Kichererbsen","2 Paprika, 1 Zucchini","2 EL Currypulver mild, Salz"], zubereitung:["Reis nach Packungsangabe kochen.","Gemuese wuerfeln und anduensten.","Kokosmilch, Kichererbsen und Currypulver dazugeben, 10 Minuten koecheln lassen.","Mit dem Reis servieren."]},
+    {id:"sp", name:"Spinat-Ricotta-Pasta", kc:440, p:20, vc:30, fe:4, ca:280, zutaten:["500g Vollkornnudeln","300g Ricotta","250g Spinat","2 Knoblauchzehen","Parmesan, Salz"], zubereitung:["Nudeln kochen.","Knoblauch anduensten, Spinat zusammenfallen lassen.","Ricotta unterruehren und mit etwas Nudelwasser cremig ruehren.","Nudeln untermischen und mit Parmesan servieren."]},
+    {id:"bb", name:"Brotzeit-Platte", kc:350, p:18, vc:20, fe:2, ca:250, zutaten:["8 Scheiben Vollkornbrot","Kaese, Aufschnitt (je 200g)","Rohkost: Gurke, Paprika, Tomaten","Butter, Quark","Aliana Leinoel"], zubereitung:["Brot in Scheiben auf einer Platte anrichten.","Kaese und Aufschnitt dazulegen.","Rohkost waschen, schneiden und ergaenzen.","Quark mit Leinoel verfeinern und als Dip dazu reichen."]},
   ]},
   snack: {label:"Snacks", items:[
-    {id:"jb", name:"Joghurt-Beeren-Bowl", kc:180, p:7, vc:25, fe:1, ca:200, zutaten:["400g Naturjoghurt","200g Beeren","2 EL Honig","Granola","Chia-Samen"]},
-    {id:"ae2", name:"Apfelscheiben mit Erdnussbutter", kc:190, p:5, vc:8, fe:1, ca:30, zutaten:["4 Aepfel","8 EL Erdnussbutter","Optional: Rosinen, Kokos"]},
-    {id:"mq", name:"Moehren-Sticks mit Quark-Dip", kc:140, p:8, vc:10, fe:1, ca:120, zutaten:["6 Moehren","200g Quark","2 EL Aliana Leinoel","Schnittlauch, Salz"]},
-    {id:"bk", name:"Bananen-Haferkekse", kc:200, p:5, vc:5, fe:2, ca:40, zutaten:["3 reife Bananen","200g Haferflocken","2 EL Honig","1 TL Zimt"]},
-    {id:"os", name:"Obstsalat mit Chia", kc:160, p:3, vc:40, fe:1, ca:40, zutaten:["Saison-Obst","2 EL Chia-Samen","Orangensaft","1 EL Honig"]},
-    {id:"pc", name:"Selbstgemachtes Popcorn", kc:180, p:4, vc:2, fe:1, ca:20, zutaten:["150g Popcornmais","2 EL Kokosfett","Salz oder Honig + Zimt"]},
-    {id:"qb", name:"Quark-Beeren-Bowl", kc:180, p:12, vc:35, fe:1, ca:200, zutaten:["400g Quark","100ml Milch","200g Erdbeeren","2 EL Honig","2 EL Aliana Leinoel"]},
-    {id:"ns", name:"Nuss-Trockenfruechte-Mix", kc:220, p:6, vc:3, fe:2, ca:50, zutaten:["Mandeln 50g","Walnuesse 50g","Rosinen 40g","Getrocknete Aprikosen 30g"]},
+    {id:"jb", name:"Joghurt-Beeren-Bowl", kc:180, p:7, vc:25, fe:1, ca:200, zutaten:["400g Naturjoghurt","200g Beeren","2 EL Honig","Granola","Chia-Samen"], zubereitung:["Joghurt in Schalen verteilen.","Beeren waschen und darauf verteilen.","Mit Honig betraeufeln, Granola und Chia-Samen bestreuen."]},
+    {id:"ae2", name:"Apfelscheiben mit Erdnussbutter", kc:190, p:5, vc:8, fe:1, ca:30, zutaten:["4 Aepfel","8 EL Erdnussbutter","Optional: Rosinen, Kokos"], zubereitung:["Aepfel waschen und in Spalten schneiden.","Mit Erdnussbutter bestreichen oder zum Dippen anrichten.","Nach Belieben mit Rosinen oder Kokos bestreuen."]},
+    {id:"mq", name:"Moehren-Sticks mit Quark-Dip", kc:140, p:8, vc:10, fe:1, ca:120, zutaten:["6 Moehren","200g Quark","2 EL Aliana Leinoel","Schnittlauch, Salz"], zubereitung:["Moehren schaelen und in Sticks schneiden.","Quark mit Leinoel, Schnittlauch und Salz verruehren.","Moehren mit dem Dip servieren."]},
+    {id:"bk", name:"Bananen-Haferkekse", kc:200, p:5, vc:5, fe:2, ca:40, zutaten:["3 reife Bananen","200g Haferflocken","2 EL Honig","1 TL Zimt"], zubereitung:["Bananen zerdruecken und mit Haferflocken, Honig und Zimt vermengen.","Kleine Haeufchen auf ein Backblech setzen.","Bei 180 Grad ca. 15 Minuten backen."]},
+    {id:"os", name:"Obstsalat mit Chia", kc:160, p:3, vc:40, fe:1, ca:40, zutaten:["Saison-Obst","2 EL Chia-Samen","Orangensaft","1 EL Honig"], zubereitung:["Obst waschen und klein schneiden.","Mit Orangensaft und Honig vermengen.","Chia-Samen untermischen und kurz ziehen lassen."]},
+    {id:"pc", name:"Selbstgemachtes Popcorn", kc:180, p:4, vc:2, fe:1, ca:20, zutaten:["150g Popcornmais","2 EL Kokosfett","Salz oder Honig + Zimt"], zubereitung:["Kokosfett in einem Topf erhitzen.","Popcornmais dazugeben, Deckel auflegen und bei mittlerer Hitze poppen lassen.","Mit Salz oder Honig und Zimt wuerzen."]},
+    {id:"qb", name:"Quark-Beeren-Bowl", kc:180, p:12, vc:35, fe:1, ca:200, zutaten:["400g Quark","100ml Milch","200g Erdbeeren","2 EL Honig","2 EL Aliana Leinoel"], zubereitung:["Quark mit Milch glatt ruehren.","Erdbeeren waschen und klein schneiden.","Mit Honig und Leinoel verfeinert anrichten."]},
+    {id:"ns", name:"Nuss-Trockenfruechte-Mix", kc:220, p:6, vc:3, fe:2, ca:50, zutaten:["Mandeln 50g","Walnuesse 50g","Rosinen 40g","Getrocknete Aprikosen 30g"], zubereitung:["Alle Zutaten in einer Schale vermengen.","In einem verschliessbaren Behaelter aufbewahren."]},
   ]},
 };
 const TC = {
@@ -602,6 +602,7 @@ function saveNewRecipe(key) {
   const name = document.getElementById("nrn_"+key)?.value.trim();
   if (!name) return;
   const zutText = document.getElementById("nrz_"+key)?.value.trim() || "";
+  const zubText = document.getElementById("nrzb_"+key)?.value.trim() || "";
   const basePortions = Math.max(1, Number(document.getElementById("nrport_"+key)?.value)||4);
   const rec = {
     id: "u"+Date.now(), name, kat, basePortions,
@@ -611,6 +612,7 @@ function saveNewRecipe(key) {
     fe: Number(document.getElementById("nrfe_"+key)?.value)||0,
     ca: Number(document.getElementById("nrca_"+key)?.value)||0,
     zutaten: zutText ? zutText.split("\n").map(z=>z.trim()).filter(z=>z) : [],
+    zubereitung: zubText ? zubText.split("\n").map(z=>z.trim()).filter(z=>z) : [],
   };
   if (!W.customRecipes) W.customRecipes = [];
   W.customRecipes.push(rec);
@@ -1269,6 +1271,7 @@ function rPlan() {
           + `<input id="nrfe_${key}" type="number" class="fi" placeholder="Eisen mg">`
           + `<input id="nrca_${key}" type="number" class="fi" placeholder="Calcium mg">`
           + `<textarea id="nrz_${key}" class="fi" placeholder="Zutaten fuer die Einkaufsliste - eine pro Zeile (leer lassen z.B. bei Essen unterwegs)" style="min-height:60px;resize:vertical"></textarea>`
+          + `<textarea id="nrzb_${key}" class="fi" placeholder="Zubereitung - ein Schritt pro Zeile (optional)" style="min-height:60px;resize:vertical"></textarea>`
           + `<input id="nrport_${key}" type="number" class="fi" value="4" placeholder="Zutaten reichen fuer wie viele Portionen?">`
           + `<button data-save-new-recipe="${key}" class="sb">Rezept speichern</button></div>`;
       }
@@ -1286,6 +1289,13 @@ function rPlan() {
         + `<span style="display:flex;align-items:center;gap:6px"><button data-portion="${key}" data-delta="-1" style="width:22px;height:22px;border-radius:6px;border:none;background:var(--hb);color:#764ba2;font-weight:800;cursor:pointer">-</button><b style="font-size:12px;color:var(--t1)">${meal.portions} Portionen</b><button data-portion="${key}" data-delta="1" style="width:22px;height:22px;border-radius:6px;border:none;background:var(--hb);color:#764ba2;font-weight:800;cursor:pointer">+</button></span></div>`
         + rcp.zutaten.map(z => `<div style="font-size:11px;color:var(--t2);padding:2px 0">- ${scaleIngredient(z,factor)}</div>`).join("")
         + `</div>`;
+      if (rcp.zubereitung && rcp.zubereitung.length) {
+        h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd2)">`
+          + `<div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px">Zubereitung</div>`
+          + `<ol style="margin:0;padding-left:16px">`
+          + rcp.zubereitung.map(step => `<li style="font-size:11px;color:var(--t2);padding:2px 0">${esc(step)}</li>`).join("")
+          + `</ol></div>`;
+      }
     }
     h += `</div>`;
   });
