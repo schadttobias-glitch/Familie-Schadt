@@ -1344,7 +1344,7 @@ function rSterne() {
   h += `<div style="display:flex;gap:7px;margin-bottom:8px"><div style="display:flex;background:rgba(255,255,255,0.15);border-radius:11px;padding:3px;gap:2px;flex:1">`;
   W.kids.map(k=>({id:k.id,n:k.name})).forEach(k => {
     const on=kid===k.id;
-    h += `<button data-award="${k.id}" style="flex:1;padding:6px;border-radius:8px;border:none;background:${on?"white":"transparent"};color:${on?"#764ba2":"white"};font-weight:800;font-size:12px;cursor:pointer" onclick="W.sk='${k.id}';sv();rSterne()">${k.n}</button>`;
+    h += `<button style="flex:1;padding:6px;border-radius:8px;border:none;background:${on?"white":"transparent"};color:${on?"#764ba2":"white"};font-weight:800;font-size:12px;cursor:pointer" onclick="W.sk='${k.id}';sv();rSterne()">${k.n}</button>`;
   });
   h += `</div></div>`;
   // Pending requests
@@ -1408,12 +1408,6 @@ function rSterne() {
     h += `</div>`;
   }
   document.getElementById("t-sterne").innerHTML = h;
-  // Re-attach kid selector onclick (data-award used for both kids and tasks - fix)
-  document.querySelectorAll("#t-sterne [data-award]").forEach(b => {
-    if (b.dataset.kid && b.dataset.s && b.dataset.n) {
-      b.onclick = () => awardS(b.dataset.kid, parseInt(b.dataset.s), b.dataset.n);
-    }
-  });
 }
 
 // SCHULE
