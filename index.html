@@ -669,17 +669,47 @@ function deleteTemplate(name) {
   sv(); rPlan();
 }
 function isDislikedRecipe(id) {
-  const rt = (W.mealRatings||{})[id]; return !!rt && rt.down > rt.up;
+  const rt = (W.mealRatings||{})[id];
+  if (!rt) return false;
+  const vals = Object.values(rt);
+  const ups = vals.filter(v=>v==="up").length, downs = vals.filter(v=>v==="down").length;
+  return downs > ups;
 }
-function rateMeal(rid, dir) {
-  if (!rid) return;
+function rateMeal(rid, kidId, val) {
+  if (!rid || !kidId) return;
   if (!W.mealRatings) W.mealRatings = {};
-  const cur = W.mealRatings[rid] || {up:0, down:0};
-  const wasActive = cur[dir];
-  cur.up = 0; cur.down = 0;
-  if (!wasActive) cur[dir] = 1;
-  W.mealRatings[rid] = cur;
+  if (!W.mealRatings[rid]) W.mealRatings[rid] = {};
+  if (W.mealRatings[rid][kidId] === val) delete W.mealRatings[rid][kidId];
+  else W.mealRatings[rid][kidId] = val;
   sv(); rPlan(); renderKids();
+}
+const RATING_ICON = {up:"&#128077;", neutral:"&#128528;", down:"&#128078;"};
+function ratingBadgesHtml(rid) {
+  const rt = (W.mealRatings||{})[rid] || {};
+  const entries = W.kids.map(k => ({k, v:rt[k.id]})).filter(e => e.v);
+  if (!entries.length) return `<div style="font-size:11px;color:var(--t4);margin-top:7px">Noch keine Bewertung</div>`;
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:7px">`
+    + entries.map(e => `<span style="font-size:12px;color:var(--t2);display:flex;align-items:center;gap:4px">${esc(e.k.name)} ${RATING_ICON[e.v]}</span>`).join("")
+    + `</div>`;
+}
+function rAuswertung() {
+  let h = `<div class="card"><div class="ct">Bewertungs-Auswertung der Woche</div>`;
+  let any = false;
+  PLAN.forEach((day, i) => {
+    [{lb:"Fruehstueck",slot:"f"},{lb:"Mittagessen",slot:"m"},{lb:"Abendessen",slot:"a"},{lb:"Snack",slot:"s"}].forEach(x => {
+      const meal = getMeal(i, x.slot);
+      if (!meal.rid) return;
+      const rt = (W.mealRatings||{})[meal.rid] || {};
+      const entries = W.kids.map(k => ({k, v:rt[k.id]})).filter(e => e.v);
+      if (!entries.length) return;
+      any = true;
+      h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2)"><div style="font-size:12px;color:var(--t1)"><b>${DAYSF[i]}</b> ${x.lb}: ${esc(meal.n)}</div>`
+        + `<div style="display:flex;gap:8px;flex-shrink:0">` + entries.map(e => `<span style="font-size:13px">${esc(e.k.name)} ${RATING_ICON[e.v]}</span>`).join("") + `</div></div>`;
+    });
+  });
+  if (!any) h += `<div class="eb">Noch keine Bewertungen diese Woche</div>`;
+  h += `</div>`;
+  return h;
 }
 function fillWeekRandom() {
   if (!confirm("Ersetzt die Rezeptauswahl fuer die gesamte angezeigte Woche mit einem zufaelligen, abwechslungsreichen Plan. Unbeliebte Gerichte (mehr Daumen runter als hoch) werden vermieden. Fortfahren?")) return;
@@ -1054,7 +1084,7 @@ document.addEventListener("click", function(e) {
     return;
   }
   const rtb = e.target.closest("[data-rate]");
-  if (rtb) { rateMeal(rtb.dataset.rate, rtb.dataset.dir); return; }
+  if (rtb) { rateMeal(rtb.dataset.rate, rtb.dataset.kid, rtb.dataset.val); return; }
   const calNav = e.target.closest("[data-cal-nav]");
   if (calNav) { W.calMonthOffset = (W.calMonthOffset||0) + parseInt(calNav.dataset.calNav); sv(); rTermine(); return; }
   const calJump = e.target.closest("[data-cal-jump]");
@@ -1196,9 +1226,13 @@ function renderKids() {
     h += `<div style="font-size:18px;font-weight:900;color:white;text-shadow:0 2px 6px rgba(0,0,0,0.2);margin-bottom:10px">Was esse ich heute?</div>`;
     [{lb:"Fruehstueck",slot:"f"},{lb:"Mittagessen",slot:"m"},{lb:"Abendessen",slot:"a"},{lb:"Snack",slot:"s"}].forEach(x => {
       const meal = getMeal(W.day, x.slot);
-      const rt = meal.rid ? ((W.mealRatings||{})[meal.rid] || {up:0, down:0}) : null;
+      const myVal = meal.rid ? ((W.mealRatings||{})[meal.rid]||{})[kid] : null;
       h += `<div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 14px;margin-bottom:8px;box-shadow:0 3px 12px rgba(0,0,0,0.1)"><div style="font-size:12px;color:#764ba2;font-weight:800;margin-bottom:3px">${x.lb}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:16px;font-weight:700;color:#333">${meal.n}</div>`
-        + (rt ? `<div style="display:flex;gap:6px;flex-shrink:0"><button data-rate="${meal.rid}" data-dir="up" style="background:${rt.up?"#4caf50":"#eee"};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer">&#128077;</button><button data-rate="${meal.rid}" data-dir="down" style="background:${rt.down?"#f44336":"#eee"};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer">&#128078;</button></div>` : "")
+        + (meal.rid ? `<div style="display:flex;gap:5px;flex-shrink:0">`
+          + `<button data-rate="${meal.rid}" data-kid="${kid}" data-val="up" style="background:${myVal==="up"?"#4caf50":"#eee"};border:none;border-radius:8px;padding:6px 8px;font-size:14px;cursor:pointer">&#128077;</button>`
+          + `<button data-rate="${meal.rid}" data-kid="${kid}" data-val="neutral" style="background:${myVal==="neutral"?"#ffb300":"#eee"};border:none;border-radius:8px;padding:6px 8px;font-size:14px;cursor:pointer">&#128528;</button>`
+          + `<button data-rate="${meal.rid}" data-kid="${kid}" data-val="down" style="background:${myVal==="down"?"#f44336":"#eee"};border:none;border-radius:8px;padding:6px 8px;font-size:14px;cursor:pointer">&#128078;</button>`
+          + `</div>` : "")
         + `</div></div>`;
     });
   }
@@ -1279,6 +1313,7 @@ function rPlan() {
     + `<div style="font-size:9px;font-weight:800;color:var(--t3);letter-spacing:0.5px;margin:8px 0 3px">ELTERN</div>`
     + nutRowPair(W.parents[0], W.parents[1])
     + `</div>`;
+  h += rAuswertung();
   [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
     const key = W.day+"-"+slot, meal = getMeal(W.day, slot), kat = SLOT_KAT[slot];
     h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${meal.n}</div></div><button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div>`;
@@ -1302,8 +1337,7 @@ function rPlan() {
     }
     h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div>`;
     if (meal.rid) {
-      const rt = (W.mealRatings||{})[meal.rid] || {up:0, down:0};
-      h += `<div style="display:flex;align-items:center;gap:8px;margin-top:7px"><button data-rate="${meal.rid}" data-dir="up" style="background:${rt.up?"#4caf50":"var(--hb)"};border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:${rt.up?"white":"#4caf50"};cursor:pointer">&#128077;</button><button data-rate="${meal.rid}" data-dir="down" style="background:${rt.down?"#f44336":"var(--hb)"};border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:${rt.down?"white":"#f44336"};cursor:pointer">&#128078;</button></div>`;
+      h += ratingBadgesHtml(meal.rid);
     }
     const rcp = meal.rid ? findRecipe(meal.rid) : null;
     if (rcp && rcp.zutaten && rcp.zutaten.length) {
