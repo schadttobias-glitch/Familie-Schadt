@@ -3,9 +3,7 @@
 // eine iCalendar-Datei pro Person, damit das iPhone sie per Kalender-Abo
 // automatisch einbinden kann.
 
-const FIREBASE_API_KEY = "AIzaSyCpgf8FDf2LGsOtY6aaZOX3j2X8Ck2FnbM";
-const DB_URL = "https://familie-schadt-default-rtdb.europe-west1.firebasedatabase.app";
-const SYNC_PATH = "sync/3cvwq26saehh370vawcftmi2/state";
+const { fetchState } = require("./_firebase");
 
 const STATIC_PEOPLE = { alia: "Alia", tiana: "Tiana", tobi: "Tobi", eva: "Eva" };
 const CALENDAR_COLORS = { alia: "#1565c0", tiana: "#8e24aa", tobi: "#f9a825", eva: "#e91e63", familie: "#26a69a" };
@@ -201,32 +199,6 @@ function buildFeed(state, personKey) {
 
   lines.push("END:VCALENDAR");
   return lines.join("\r\n");
-}
-
-let cachedToken = null;
-let cachedTokenExp = 0;
-
-async function getIdToken() {
-  if (cachedToken && Date.now() < cachedTokenExp) return cachedToken;
-  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ returnSecureToken: true }),
-  });
-  if (!res.ok) throw new Error("Firebase-Anmeldung fehlgeschlagen: " + res.status);
-  const data = await res.json();
-  if (!data.idToken) throw new Error("Firebase-Anmeldung ohne Token");
-  cachedToken = data.idToken;
-  cachedTokenExp = Date.now() + (Number(data.expiresIn || 3600) - 120) * 1000;
-  return cachedToken;
-}
-
-async function fetchState() {
-  const token = await getIdToken();
-  const res = await fetch(`${DB_URL}/${SYNC_PATH}.json?auth=${token}`);
-  if (!res.ok) throw new Error("Datenbank-Lesefehler: " + res.status);
-  const data = await res.json();
-  return data || {};
 }
 
 module.exports = { fetchState, buildFeed, PERSON_NAMES: STATIC_PEOPLE };

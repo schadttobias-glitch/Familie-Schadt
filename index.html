@@ -312,7 +312,7 @@ const DEF_REW = [
 
 // STATE
 let W = {
-  day:0, tab:"plan", chk:{}, apts:[{id:1,day:"Mo",time:"10:00",title:"Zahnarzt Alia",who:"Alia",color:"#e91e63"}],
+  day:0, tab:"plan", chk:{}, apts:[{id:1,day:"Mo",time:"10:00",title:"Zahnarzt Alia",who:"Alia",color:"#e91e63"}], importedEva:[],
   rec:JSON.parse(JSON.stringify(DEF_REC)),
   stars:{alia:0,tiana:0}, total:{alia:0,tiana:0},
   tasks:JSON.parse(JSON.stringify(DEF_TASKS)),
@@ -473,7 +473,8 @@ function eventsOnDate(date) {
   return [
     ...W.rec.filter(r => recOccursOn(r, date)),
     ...W.apts.filter(a => !a.date && recOccursOn(a, date)),
-    ...W.apts.filter(a => a.date === iso)
+    ...W.apts.filter(a => a.date === iso),
+    ...(W.importedEva||[]).filter(e => e.date === iso)
   ];
 }
 function easterSunday(year) {
@@ -1526,11 +1527,11 @@ function rCalendar() {
       if (ferien) monthFerien.add(ferien.n);
       if (feiertag) monthFeiertage.push({n:feiertag.n, d:vd});
       const isToday = dtI===todayIso;
-      const all=[...W.rec.filter(r=>recOccursOn(r, vd)),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):recOccursOn(a, vd))];
+      const all=[...W.rec.filter(r=>recOccursOn(r, vd)),...W.apts.filter(a=>a.date?(a.date===dtI&&a.day===dd):recOccursOn(a, vd)),...(W.importedEva||[]).filter(e=>e.date===dtI)];
       h += `<div data-cal-jump="${dtI}" class="wr" style="cursor:pointer;border-radius:8px;${ferien?"background:#ffe0b230;":isToday?"background:#764ba215;":""}">`
         + `<div style="width:28px;flex-shrink:0;padding-top:2px"><div style="font-weight:900;font-size:11px;color:${feiertag?"#c62828":"#764ba2"}">${dd}</div><div style="font-size:8px;color:var(--t3)">${fmtDshort(vd)}</div></div>`
         + `<div class="wt">`;
-      if (all.length) all.forEach(a => { h += `<span class="wtg" style="background:${(a.color||"#764ba2")}15;color:${a.color||"#764ba2"}">${esc(a.title)}</span>`; });
+      if (all.length) all.forEach(a => { const c=a.imported?personColorsForWho(a.who)[0]:(a.color||"#764ba2"); h += `<span class="wtg" style="background:${c}15;color:${c}">${a.imported?"&#128241; ":""}${esc(a.title)}</span>`; });
       else h += `<span style="font-size:10px;color:var(--t4)">frei</span>`;
       h += `</div></div>`;
     });
@@ -1556,6 +1557,7 @@ function rTermine() {
   const dr=W.rec.filter(r=>recOccursOn(r, viewDt));
   const deRecurring=W.apts.filter(a=>!a.date && recOccursOn(a, viewDt));
   const de=W.apts.filter(a=>a.date && a.date===viewIso && a.day===d);
+  const imp=(W.importedEva||[]).filter(e=>e.date===viewIso);
   const freqSelect = (id, cur) => `<select id="${id}" data-freq-select="${id}" style="padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px;margin-bottom:6px"><option value="weekly"${!cur||cur==="weekly"?" selected":""}>Jede Woche</option><option value="biweekly"${cur==="biweekly"?" selected":""}>Alle 2 Wochen</option><option value="monthly"${cur==="monthly"?" selected":""}>Jeden Monat</option></select>`;
   const freqLabel = r => r.freq==="biweekly" ? " · alle 2 Wochen" : r.freq==="monthly" ? " · jeden Monat (Tag "+(r.dayOfMonth||1)+")" : "";
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">${DAYSF[W.day]}</div><div style="display:flex;gap:5px"><button data-export-ics="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Export</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
@@ -1595,7 +1597,14 @@ function rTermine() {
       h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${a.color}"><div><div style="font-weight:800;font-size:13px">${a.title}</div><div style="font-size:11px;color:var(--t2)">${a.time?a.time+" - ":""}${a.who}</div></div><button data-apt-del="${a.id}" class="dlb">x</button></div>`;
     });
   }
-  if (!dr.length&&!deRecurring.length&&!de.length) h += `<div class="eb">Keine Termine heute</div>`;
+  if (imp.length) {
+    h += `<div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;margin-bottom:5px;margin-top:8px;letter-spacing:1px">AUS EVAS IPHONE-KALENDER</div>`;
+    imp.forEach(e => {
+      const c = personColorsForWho(e.who)[0];
+      h += `<div style="background:var(--cb);color:var(--t1);border-radius:13px;padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);border-left:5px solid ${c}"><div><div style="font-weight:800;font-size:13px">&#128241; ${esc(e.title)}</div><div style="font-size:11px;color:var(--t2)">${e.time?e.time+" - ":""}${esc(e.who)}</div></div></div>`;
+    });
+  }
+  if (!dr.length&&!deRecurring.length&&!de.length&&!imp.length) h += `<div class="eb">Keine Termine heute</div>`;
   document.getElementById("t-termine").innerHTML = h;
 }
 
@@ -1675,6 +1684,13 @@ migrateMealOv();
 renderHeader();
 if (isUnlocked()) { showScr("start"); } else { showScr("lock"); renderLockUI(); }
 initCloudSync();
+try {
+  const last = Number(localStorage.getItem("fs11-evaSyncAt") || 0);
+  if (Date.now() - last > 20*60*1000) {
+    localStorage.setItem("fs11-evaSyncAt", String(Date.now()));
+    fetch("/api/sync-eva").catch(()=>{});
+  }
+} catch(e) {}
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
 }

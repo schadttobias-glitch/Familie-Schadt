@@ -2,5 +2,10 @@
   "name": "familie-schadt",
   "private": true,
   "version": "1.0.0",
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "node-ical": "^0.27.3"
+  }
 }
