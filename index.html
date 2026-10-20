@@ -660,7 +660,9 @@ function rateMeal(rid, dir) {
   if (!rid) return;
   if (!W.mealRatings) W.mealRatings = {};
   const cur = W.mealRatings[rid] || {up:0, down:0};
-  cur[dir] = (cur[dir]||0) + 1;
+  const wasActive = cur[dir];
+  cur.up = 0; cur.down = 0;
+  if (!wasActive) cur[dir] = 1;
   W.mealRatings[rid] = cur;
   sv(); rPlan();
 }
@@ -1274,7 +1276,7 @@ function rPlan() {
     h += `<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag" style="background:#ff704318;color:#ff7043">${meal.kc} kcal</span><span class="tag" style="background:#4caf5018;color:#4caf50">P:${meal.p}g</span><span class="tag" style="background:#2196f318;color:#2196f3">VitC:${meal.vc}mg</span><span class="tag" style="background:#79554818;color:#795548">Fe:${meal.fe}mg</span><span class="tag" style="background:#00bcd418;color:#00bcd4">Ca:${meal.ca}mg</span></div>`;
     if (meal.rid) {
       const rt = (W.mealRatings||{})[meal.rid] || {up:0, down:0};
-      h += `<div style="display:flex;align-items:center;gap:8px;margin-top:7px"><button data-rate="${meal.rid}" data-dir="up" style="background:var(--hb);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#4caf50;cursor:pointer">&#128077; ${rt.up}</button><button data-rate="${meal.rid}" data-dir="down" style="background:var(--hb);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#f44336;cursor:pointer">&#128078; ${rt.down}</button></div>`;
+      h += `<div style="display:flex;align-items:center;gap:8px;margin-top:7px"><button data-rate="${meal.rid}" data-dir="up" style="background:${rt.up?"#4caf50":"var(--hb)"};border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:${rt.up?"white":"#4caf50"};cursor:pointer">&#128077;</button><button data-rate="${meal.rid}" data-dir="down" style="background:${rt.down?"#f44336":"var(--hb)"};border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:${rt.down?"white":"#f44336"};cursor:pointer">&#128078;</button></div>`;
     }
     const rcp = meal.rid ? findRecipe(meal.rid) : null;
     if (rcp && rcp.zutaten && rcp.zutaten.length) {
