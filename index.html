@@ -1155,7 +1155,13 @@ function renderKids() {
     h += `<div style="font-size:68px;font-weight:900;color:#f57f17;line-height:1">${st}</div>`;
     h += `<div style="font-size:28px;letter-spacing:3px;margin-top:8px">${Array(Math.min(st,10)).fill("&#11088;").join("")}${st>10?" +"+(st-10):""}</div>`;
     h += `</div>`;
-    const nr = DEF_REW.filter(r=>r.s>st).sort((a,b)=>a.s-b.s)[0];
+    const available = (W.rew||[]).filter(r=>st>=r.s);
+    if (available.length) {
+      h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#2e7d32;margin-bottom:8px">&#127881; Schon freigeschaltet</div>`
+        + available.map(r => `<div style="font-size:13px;color:#555;padding:4px 0">${r.n} (${r.s} Sterne)</div>`).join("")
+        + `</div>`;
+    }
+    const nr = (W.rew||[]).filter(r=>r.s>st).sort((a,b)=>a.s-b.s)[0];
     if (nr) {
       const pc = Math.round(st/nr.s*100);
       h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#555;margin-bottom:8px">Naechste Belohnung: ${nr.n}</div><div class="bw" style="height:14px"><div class="bf" style="width:${pc}%;background:linear-gradient(90deg,#f57f17,#ff9800)"></div></div><div style="font-size:11px;color:#888;text-align:center;margin-top:4px">${st} von ${nr.s} Sternen</div></div>`;
@@ -1197,7 +1203,6 @@ function reqTask(kid, tid, tn, s) {
   if (!W.reqs) W.reqs = [];
   W.reqs.push({id:Date.now(), kid, tid, tn, s, status:"pending"});
   sv(); renderKids();
-  alert("Super! Mama oder Papa bestaetigt das gleich!");
 }
 
 // APP
