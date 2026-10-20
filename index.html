@@ -551,6 +551,11 @@ function migrateMealOv() {
     sv();
   }
 }
+function migrateHistIds() {
+  let changed = false;
+  (W.hist||[]).forEach((e, i) => { if (e.id == null) { e.id = Date.now()+i; changed = true; } });
+  if (changed) sv();
+}
 function findDefaultRecipeId(i, slot) {
   const name = PLAN[i][slot], kat = SLOT_KAT[slot];
   const r = RECIPES[kat] && RECIPES[kat].items.find(x => x.name === name);
@@ -666,7 +671,7 @@ function rateMeal(rid, dir) {
   cur.up = 0; cur.down = 0;
   if (!wasActive) cur[dir] = 1;
   W.mealRatings[rid] = cur;
-  sv(); rPlan();
+  sv(); rPlan(); renderKids();
 }
 function fillWeekRandom() {
   if (!confirm("Ersetzt die Rezeptauswahl fuer die gesamte angezeigte Woche mit einem zufaelligen, abwechslungsreichen Plan. Unbeliebte Gerichte (mehr Daumen runter als hoch) werden vermieden. Fortfahren?")) return;
@@ -957,6 +962,8 @@ document.addEventListener("click", function(e) {
   if (lk) { lockKey(lk.dataset.lock); return; }
   const aw = e.target.closest("[data-award]");
   if (aw) { awardS(aw.dataset.kid, parseInt(aw.dataset.s), aw.dataset.n); return; }
+  const hd = e.target.closest("[data-hist-del]");
+  if (hd) { if (confirm("Diesen Eintrag wirklich entfernen? Die Sterne werden entsprechend zurueckgebucht.")) deleteHistEntry(hd.dataset.histDel); return; }
   const te = e.target.closest("[data-task-edit]");
   if (te) { W.taskEdit = W.taskEdit===te.dataset.taskEdit?null:te.dataset.taskEdit; sv(); rSterne(); return; }
   const td = e.target.closest("[data-task-del]");
@@ -1173,8 +1180,12 @@ function renderKids() {
     });
   } else {
     h += `<div style="font-size:18px;font-weight:900;color:white;text-shadow:0 2px 6px rgba(0,0,0,0.2);margin-bottom:10px">Was esse ich heute?</div>`;
-    [{lb:"Fruehstueck",n:p.f},{lb:"Mittagessen",n:p.m},{lb:"Abendessen",n:p.a},{lb:"Snack",n:p.s}].forEach(x => {
-      h += `<div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 14px;margin-bottom:8px;box-shadow:0 3px 12px rgba(0,0,0,0.1)"><div style="font-size:12px;color:#764ba2;font-weight:800;margin-bottom:3px">${x.lb}</div><div style="font-size:16px;font-weight:700;color:#333">${x.n}</div></div>`;
+    [{lb:"Fruehstueck",slot:"f"},{lb:"Mittagessen",slot:"m"},{lb:"Abendessen",slot:"a"},{lb:"Snack",slot:"s"}].forEach(x => {
+      const meal = getMeal(W.day, x.slot);
+      const rt = meal.rid ? ((W.mealRatings||{})[meal.rid] || {up:0, down:0}) : null;
+      h += `<div style="background:rgba(255,255,255,0.92);border-radius:16px;padding:12px 14px;margin-bottom:8px;box-shadow:0 3px 12px rgba(0,0,0,0.1)"><div style="font-size:12px;color:#764ba2;font-weight:800;margin-bottom:3px">${x.lb}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:16px;font-weight:700;color:#333">${meal.n}</div>`
+        + (rt ? `<div style="display:flex;gap:6px;flex-shrink:0"><button data-rate="${meal.rid}" data-dir="up" style="background:${rt.up?"#4caf50":"#eee"};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer">&#128077;</button><button data-rate="${meal.rid}" data-dir="down" style="background:${rt.down?"#f44336":"#eee"};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer">&#128078;</button></div>` : "")
+        + `</div></div>`;
     });
   }
   h += `</div>`;
@@ -1305,12 +1316,20 @@ function rPlan() {
 // STERNE
 function awardS(kid, s, n) {
   W.stars[kid]=(W.stars[kid]||0)+s; W.total[kid]=(W.total[kid]||0)+s;
-  W.hist.push({kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
+  W.hist.push({id:Date.now(), kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
   sv(); rSterne();
 }
 function redeemR(kid, s, n) {
   if ((W.stars[kid]||0)<s) return;
-  W.stars[kid]-=s; W.hist.push({kid,n,s,type:"redeem",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
+  W.stars[kid]-=s; W.hist.push({id:Date.now(), kid,n,s,type:"redeem",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
+  sv(); rSterne();
+}
+function deleteHistEntry(id) {
+  const e = (W.hist||[]).find(x => String(x.id)===String(id));
+  if (!e) return;
+  if (e.type==="award") { W.stars[e.kid]=(W.stars[e.kid]||0)-e.s; W.total[e.kid]=(W.total[e.kid]||0)-e.s; }
+  else { W.stars[e.kid]=(W.stars[e.kid]||0)+e.s; }
+  W.hist = W.hist.filter(x => String(x.id)!==String(id));
   sv(); rSterne();
 }
 function getStarsTrend(kid, days) {
@@ -1413,7 +1432,7 @@ function rSterne() {
   if (W.hist.length) {
     h += `<div class="card"><div class="ct">Letzte Aktivitaeten</div>`;
     W.hist.slice(-5).reverse().forEach(e => {
-      h += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd2);font-size:12px"><span>${kidName(e.kid)}: ${e.n}</span><span style="color:${e.type==="award"?"#4caf50":"#f44336"};font-weight:700">${e.type==="award"?"+":"-"}${e.s}</span></div>`;
+      h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd2);font-size:12px"><span>${kidName(e.kid)}: ${e.n}</span><span style="display:flex;align-items:center;gap:8px"><span style="color:${e.type==="award"?"#4caf50":"#f44336"};font-weight:700">${e.type==="award"?"+":"-"}${e.s}</span><button data-hist-del="${e.id}" style="background:none;border:none;color:var(--t4);font-size:14px;cursor:pointer;line-height:1;padding:2px">&#128465;</button></span></div>`;
     });
     h += `</div>`;
   }
@@ -1714,6 +1733,7 @@ function rSport() {
 // INIT
 ld();
 migrateMealOv();
+migrateHistIds();
 renderHeader();
 if (isUnlocked()) { showScr("start"); } else { showScr("lock"); renderLockUI(); }
 initCloudSync();
