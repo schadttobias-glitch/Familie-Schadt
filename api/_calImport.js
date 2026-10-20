@@ -8,6 +8,7 @@ const { writeImportedPerson } = require("./_firebase");
 
 const SOURCES = {
   eva: { name: "Eva", envVar: "IMPORT_ICS_URL_EVA" },
+  eva_google: { name: "Eva", envVar: "IMPORT_ICS_URL_EVA_GOOGLE" },
   alia: { name: "Alia", envVar: "IMPORT_ICS_URL_ALIA" },
   tiana: { name: "Tiana", envVar: "IMPORT_ICS_URL_TIANA" },
 };
