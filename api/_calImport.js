@@ -1,12 +1,16 @@
-// Holt Evas oeffentlich freigegebenen iPhone-Kalender (iCloud) und spielt die
-// Termine schreibgeschuetzt in Familie Schadt ein (Feld "importedEva" im
-// gemeinsamen Zustand). Laeuft nur in eine Richtung: iPhone -> App.
+// Holt oeffentlich freigegebene iPhone-Kalender (iCloud) einzelner
+// Familienmitglieder und spielt die Termine schreibgeschuetzt in Familie
+// Schadt ein (Pfad "imported" im Firebase-Zustand). Laeuft nur in eine
+// Richtung: iPhone -> App.
 
 const ical = require("node-ical");
-const { writeImportedEva } = require("./_firebase");
+const { writeImportedPerson } = require("./_firebase");
 
-const SOURCE_PERSON = "Eva";
-const ENV_VAR = "IMPORT_ICS_URL_EVA";
+const SOURCES = {
+  eva: { name: "Eva", envVar: "IMPORT_ICS_URL_EVA" },
+  alia: { name: "Alia", envVar: "IMPORT_ICS_URL_ALIA" },
+  tiana: { name: "Tiana", envVar: "IMPORT_ICS_URL_TIANA" },
+};
 const WINDOW_DAYS = 180;
 
 function toHttps(url) {
@@ -24,23 +28,25 @@ function localParts(date, tz) {
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
 }
 
-function mapInstance(instance, id) {
+function mapInstance(instance, id, personName) {
   const tz = (instance.start && instance.start.tz) || "Europe/Berlin";
   const isAllDay = Boolean(instance.isFullDay) || Boolean(instance.start && instance.start.dateOnly);
   const lp = localParts(instance.start, tz);
   return {
     id,
     title: instance.summary || "Termin",
-    who: SOURCE_PERSON,
+    who: personName,
     date: lp.date,
     time: isAllDay ? undefined : lp.time,
     imported: true,
   };
 }
 
-async function importEvaIntoFirebase() {
-  const url = process.env[ENV_VAR];
-  if (!url) throw new Error(ENV_VAR + " ist nicht gesetzt");
+async function importPersonCalendar(personId) {
+  const src = SOURCES[personId];
+  if (!src) throw new Error("Unbekannte Person: " + personId);
+  const url = process.env[src.envVar];
+  if (!url) throw new Error(src.envVar + " ist nicht gesetzt");
   const httpsUrl = toHttps(url);
 
   const data = await ical.async.fromURL(httpsUrl);
@@ -58,17 +64,30 @@ async function importEvaIntoFirebase() {
     if (ev.rrule) {
       const instances = ical.expandRecurringEvent(ev, { from, to });
       instances.forEach((inst, i) => {
-        out.push(mapInstance(inst, `eva-${ev.uid || key}-${i}`));
+        out.push(mapInstance(inst, `${personId}-${ev.uid || key}-${i}`, src.name));
       });
     } else if (ev.start && ev.start >= from && ev.start <= to) {
-      out.push(mapInstance(ev, `eva-${ev.uid || key}`));
+      out.push(mapInstance(ev, `${personId}-${ev.uid || key}`, src.name));
     }
   }
 
   out.sort((a, b) => (a.date + "T" + (a.time || "00:00")).localeCompare(b.date + "T" + (b.time || "00:00")));
 
-  await writeImportedEva(out);
-  return { count: out.length, updatedAt: Date.now() };
+  await writeImportedPerson(personId, out);
+  return { person: personId, count: out.length };
 }
 
-module.exports = { importEvaIntoFirebase };
+async function importAllCalendars() {
+  const results = [];
+  for (const personId of Object.keys(SOURCES)) {
+    if (!process.env[SOURCES[personId].envVar]) continue;
+    try {
+      results.push(await importPersonCalendar(personId));
+    } catch (err) {
+      results.push({ person: personId, error: String((err && err.message) || err) });
+    }
+  }
+  return results;
+}
+
+module.exports = { importPersonCalendar, importAllCalendars, SOURCES };

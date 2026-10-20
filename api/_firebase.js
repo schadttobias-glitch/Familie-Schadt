@@ -4,7 +4,7 @@ const FIREBASE_API_KEY = "AIzaSyCpgf8FDf2LGsOtY6aaZOX3j2X8Ck2FnbM";
 const DB_URL = "https://familie-schadt-default-rtdb.europe-west1.firebasedatabase.app";
 const SYNC_ROOT = "sync/3cvwq26saehh370vawcftmi2";
 const SYNC_PATH = SYNC_ROOT + "/state";
-const IMPORTED_EVA_PATH = SYNC_ROOT + "/importedEva";
+const IMPORTED_PATH = SYNC_ROOT + "/imported";
 
 let cachedToken = null;
 let cachedTokenExp = 0;
@@ -35,20 +35,22 @@ async function fetchState() {
   return (raw && raw.data) || {};
 }
 
-// Importierte Eva-Termine leben in einem EIGENEN Pfad, getrennt von SYNC_PATH.
+// Importierte Termine leben in einem EIGENEN Pfad, getrennt von SYNC_PATH.
 // Grund: der Client ueberschreibt SYNC_PATH bei jeder lokalen Aenderung komplett
-// (volles .set()). Laege importedEva dort, koennte ein Geraet mit veraltetem
+// (volles .set()). Laegen die Importe dort, koennte ein Geraet mit veraltetem
 // lokalem Stand einen frischen Server-Import versehentlich wieder loeschen.
-// Der eigene Pfad wird vom Client nur gelesen, nie beschrieben.
-async function writeImportedEva(items) {
+// Der eigene Pfad wird vom Client nur gelesen, nie beschrieben. Pro Person ein
+// eigener Unterschluessel (PATCH = nur diese Person wird ersetzt, die anderen
+// bleiben unberuehrt).
+async function writeImportedPerson(personId, items) {
   const token = await getIdToken();
-  const res = await fetch(`${DB_URL}/${IMPORTED_EVA_PATH}.json?auth=${token}`, {
-    method: "PUT",
+  const res = await fetch(`${DB_URL}/${IMPORTED_PATH}.json?auth=${token}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items, updatedAt: Date.now() }),
+    body: JSON.stringify({ [personId]: { items, updatedAt: Date.now() } }),
   });
   if (!res.ok) throw new Error("Datenbank-Schreibfehler: " + res.status);
   return res.json();
 }
 
-module.exports = { DB_URL, SYNC_PATH, IMPORTED_EVA_PATH, getIdToken, fetchState, writeImportedEva };
+module.exports = { DB_URL, SYNC_PATH, IMPORTED_PATH, getIdToken, fetchState, writeImportedPerson };
