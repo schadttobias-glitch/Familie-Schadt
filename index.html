@@ -437,15 +437,12 @@ async function initCloudSync() {
       if (!remote || !remote.updatedAt || !remote.data) { syncStatus = "synced"; renderSyncBadge(); return; }
       if (remote.updatedAt <= syncLastPushedAt) { syncStatus = "synced"; renderSyncBadge(); return; }
       syncApplyingRemote = true;
-      const starsBefore = {...(W.stars||{})};
       Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
       migrateHistIds();
       syncLastPushedAt = remote.updatedAt;
       try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
       syncApplyingRemote = false;
       syncStatus = "synced"; renderSyncBadge();
-      const starsIncreased = Object.keys(W.stars||{}).some(k => (W.stars[k]||0) > (starsBefore[k]||0));
-      if (starsIncreased) showConfetti();
       renderHeader(); renderDays(); renderCurrent(); renderKids();
     }, () => { syncStatus = "error"; renderSyncBadge(); });
   } catch (e) {
@@ -1216,6 +1213,8 @@ function renderKids() {
   h += `<div style="text-align:center;padding:12px 0 16px"><div style="display:flex;justify-content:center">${avatarHtml(kidById(kid), 56)}</div><div style="font-size:24px;font-weight:900;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2);margin-top:4px">Hallo ${name}!</div></div>`;
 
   if (W.ktab==="s") {
+    if (lastSeenKidStars[kid] !== undefined && st > lastSeenKidStars[kid]) showConfetti();
+    lastSeenKidStars[kid] = st;
     const tot = W.total[kid]||0;
     const {cur:mascot, next:mascotNext} = mascotForStars(tot);
     const mascotPc = mascotNext ? Math.round(((tot-mascot.min)/(mascotNext.min-mascot.min))*100) : 100;
@@ -1407,6 +1406,7 @@ function rPlan() {
 }
 
 // STERNE
+let lastSeenKidStars = {};
 function showConfetti() {
   const colors = ["#f44336","#ff9800","#ffeb3b","#4caf50","#2196f3","#9c27b0","#e91e63"];
   for (let i=0;i<36;i++) {
@@ -1454,12 +1454,12 @@ const BADGES = [
 function awardS(kid, s, n) {
   W.stars[kid]=(W.stars[kid]||0)+s; W.total[kid]=(W.total[kid]||0)+s;
   W.hist.push({id:Date.now(), kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
-  sv(); rSterne(); showConfetti();
+  sv(); rSterne();
 }
 function redeemR(kid, s, n) {
   if ((W.stars[kid]||0)<s) return;
   W.stars[kid]-=s; W.hist.push({id:Date.now(), kid,n,s,type:"redeem",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
-  sv(); rSterne(); showConfetti();
+  sv(); rSterne();
 }
 function deleteHistEntry(id) {
   const e = (W.hist||[]).find(x => String(x.id)===String(id));
