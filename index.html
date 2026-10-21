@@ -329,6 +329,29 @@ const DEF_TASKS = {
   alia:[{id:"a1",n:"Hausaufgaben",s:2},{id:"a2",n:"Zimmer aufraeumen",s:1},{id:"a3",n:"Tisch decken",s:1},{id:"a4",n:"Tiana helfen",s:2},{id:"a5",n:"Beim Kochen helfen",s:2},{id:"a6",n:"Zaehne putzen",s:1},{id:"a7",n:"Bett machen",s:1}],
   tiana:[{id:"t1",n:"Spielzeug wegraumen",s:1},{id:"t2",n:"Zaehne putzen",s:1},{id:"t3",n:"Selbst anziehen",s:1},{id:"t4",n:"Nett zu Alia",s:1},{id:"t5",n:"Beim Aufraumen helfen",s:1},{id:"t6",n:"Essen aufessen",s:1}]
 };
+const KID_JOKES = [
+  "Warum koennen Geister so schlecht luegen? Weil man durch sie hindurchsehen kann!",
+  "Was macht ein Pirat am liebsten in der Schule? Er geht in die Aaaaarbeitsgemeinschaft!",
+  "Zwei Schneemaenner stehen im Garten. Sagt der eine: Riechst du auch Karotten?",
+  "Wie nennt man einen Bumerang, der nicht zurueckkommt? Einen Stock!",
+  "Was ist gruen und klopft an der Tuer? Ein Klopfsalat!",
+  "Treffen sich zwei Magneten. Sagt der eine: Ich finde dich anziehend!",
+  "Warum hat der Fussballspieler ein Handy dabei? Wegen der Vorwahl!",
+  "Was sagt ein Keks beim Zahnarzt? Autsch, das war meine Fuellung!",
+  "Wie heisst die Mama vom Baby-Hai? Ammenhai!",
+  "Was ist bunt und steht am Strassenrand? Ein Farbenblinder!",
+  "Zwei Kuehe stehen auf der Wiese. Fragt die eine: Was haeltst du von BSE? Sagt die andere: Mich interessiert das nicht die Bohne, ich bin ein Pferd!",
+  "Was sitzt auf einem Baum und schreit Aha? Ein Uhu mit Sprachfehler!",
+  "Warum tragen Bienen Streifen? Weil der Karo-Pulli in der Waesche ist!",
+  "Welcher Pilz steht im Treppenhaus? Der Fahrstein-Pilz!",
+  "Was sagt ein Fisch, wenn er gegen eine Wand schwimmt? Nix, Fische koennen nicht sprechen!",
+];
+function jokeOfTheDay() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(),0,0);
+  const dayOfYear = Math.floor((now-start)/86400000);
+  return KID_JOKES[dayOfYear % KID_JOKES.length];
+}
 const DEF_REW = [
   {id:"r1",n:"30 Min Bildschirmzeit",s:10,c:"#2196f3"},
   {id:"r2",n:"Naschen",s:15,c:"#e91e63"},
@@ -361,7 +384,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
-  planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, calMonthOffset:0, calView:"monat", quickAddDate:null,
+  planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, favRecipes:[], calMonthOffset:0, calView:"monat", quickAddDate:null,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", photo:null, age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -716,6 +739,13 @@ function isDislikedRecipe(id) {
   const vals = Object.values(rt);
   const ups = vals.filter(v=>v==="up").length, downs = vals.filter(v=>v==="down").length;
   return downs > ups;
+}
+function toggleFavRecipe(rid) {
+  if (!rid) return;
+  if (!W.favRecipes) W.favRecipes = [];
+  const i = W.favRecipes.indexOf(rid);
+  if (i>=0) W.favRecipes.splice(i,1); else W.favRecipes.push(rid);
+  sv(); rPlan();
 }
 function rateMeal(rid, kidId, val) {
   if (!rid || !kidId) return;
@@ -1074,6 +1104,8 @@ document.addEventListener("click", function(e) {
   if (sd) { W.sched=W.sched.filter(s=>s.id!==sd.dataset.schedDel); sv(); rSport(); return; }
   const ck = e.target.closest("[data-chk]");
   if (ck) { const k=ck.dataset.chk; W.chk[k]=!W.chk[k]; sv(); rEinkauf(); return; }
+  const rck = e.target.closest("[data-reset-chk]");
+  if (rck) { if (confirm("Alle Haken in der Einkaufsliste zuruecksetzen?")) { W.chk={}; sv(); rEinkauf(); } return; }
   const af = e.target.closest("[data-close-af]");
   if (af) { W.showAF=false; W.quickAddDate=null; sv(); rTermine(); return; }
   const sf = e.target.closest("[data-toggle-sf]");
@@ -1131,6 +1163,8 @@ document.addEventListener("click", function(e) {
   }
   const rtb = e.target.closest("[data-rate]");
   if (rtb) { rateMeal(rtb.dataset.rate, rtb.dataset.kid, rtb.dataset.val); return; }
+  const fav = e.target.closest("[data-fav-recipe]");
+  if (fav) { toggleFavRecipe(fav.dataset.favRecipe); return; }
   const calNav = e.target.closest("[data-cal-nav]");
   if (calNav) { W.calMonthOffset = (W.calMonthOffset||0) + parseInt(calNav.dataset.calNav); sv(); rTermine(); return; }
   const calJump = e.target.closest("[data-cal-jump]");
@@ -1232,6 +1266,7 @@ function renderKids() {
   const p = PLAN[W.day];
   let h = `<div style="min-height:100vh;background:${bg};padding:16px 14px 90px">`;
   h += `<div style="text-align:center;padding:12px 0 16px"><div style="display:flex;justify-content:center">${avatarHtml(kidById(kid), 56)}</div><div style="font-size:24px;font-weight:900;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2);margin-top:4px">Hallo ${name}!</div></div>`;
+  h += `<div style="background:rgba(255,255,255,0.85);border-radius:14px;padding:10px 14px;margin-bottom:12px;text-align:center;font-size:12px;color:#555;font-weight:600">&#128512; Witz des Tages: ${esc(jokeOfTheDay())}</div>`;
 
   if (W.ktab==="s") {
     if (lastSeenKidStars[kid] !== undefined && st > lastSeenKidStars[kid]) showConfetti();
@@ -1414,11 +1449,15 @@ function rPlan() {
   h += rAuswertung();
   [["f","Fruehstueck"],["m","Mittagessen"],["a","Abendessen"],["s","Snack"]].forEach(([slot,lb]) => {
     const key = W.day+"-"+slot, meal = getMeal(W.day, slot), kat = SLOT_KAT[slot];
-    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${meal.n}</div></div><button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div>`;
+    const isFav = meal.rid && (W.favRecipes||[]).includes(meal.rid);
+    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div style="color:#764ba2;font-weight:800;font-size:11px;margin-bottom:3px">${lb}</div><div style="font-weight:700;font-size:14px;color:var(--t1);margin-bottom:6px">${meal.n}</div></div><div style="display:flex;gap:5px;flex-shrink:0">`
+      + (meal.rid ? `<button data-fav-recipe="${meal.rid}" style="background:none;border:none;font-size:18px;cursor:pointer;line-height:1;padding:4px">${isFav?"&#10084;&#65039;":"&#129293;"}</button>` : "")
+      + `<button data-edit-meal="${key}" style="background:var(--hb);color:#764ba2;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer">${W.mealEdit===key?"Fertig":"Aendern"}</button></div></div>`;
     if (W.mealEdit===key) {
-      const opts = [...(RECIPES[kat]?RECIPES[kat].items:[]), ...(W.customRecipes||[]).filter(r=>r.kat===kat)];
+      const opts = [...(RECIPES[kat]?RECIPES[kat].items:[]), ...(W.customRecipes||[]).filter(r=>r.kat===kat)]
+        .sort((a,b) => ((W.favRecipes||[]).includes(b.id)?1:0) - ((W.favRecipes||[]).includes(a.id)?1:0));
       h += `<select data-meal-select="${key}" class="fi"><option value="">- Standard-Plan -</option>`
-        + opts.map(o => `<option value="${o.id}"${meal.rid===o.id?" selected":""}>${o.name} (${o.kc} kcal)</option>`).join("")
+        + opts.map(o => `<option value="${o.id}"${meal.rid===o.id?" selected":""}>${(W.favRecipes||[]).includes(o.id)?"★ ":""}${o.name} (${o.kc} kcal)</option>`).join("")
         + `<option value="__new__">+ Neues Gericht anlegen</option></select>`;
       if (W.mealNewForm===key) {
         h += `<div style="margin-bottom:6px"><input id="nrn_${key}" class="fi" placeholder="Name (z.B. Doener)">`
@@ -1920,7 +1959,7 @@ function rTermine() {
 
 // EINKAUF
 function rEinkauf() {
-  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Einkaufsliste</div><div style="display:flex;gap:5px"><button data-share-einkauf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button></div></div>`;
+  let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Einkaufsliste</div><div style="display:flex;gap:5px"><button data-share-einkauf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Teilen</button><button onclick="window.print()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">Drucken</button><button data-reset-chk="1" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">&#8634; Zuruecksetzen</button></div></div>`;
   h += `<div style="background:rgba(255,255,255,0.18);border-radius:10px;padding:6px 11px;color:white;font-size:11px;margin-bottom:7px">Aliana Kernkraft Leinoel nicht vergessen!</div>`;
   const wpItems = getPlanIngredients();
   if (wpItems.length) {
