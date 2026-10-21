@@ -150,6 +150,7 @@ input,select,textarea{font-family:inherit}
     <button id="ktb-s" data-ktab="s" style="flex:1;padding:10px;border-radius:11px;border:none;background:linear-gradient(135deg,#f57f17,#ff9800);color:white;font-weight:800;font-size:12px;cursor:pointer">&#11088; Sterne</button>
     <button id="ktb-a" data-ktab="a" style="flex:1;padding:10px;border-radius:11px;border:2px solid #eee;background:white;color:#555;font-weight:800;font-size:12px;cursor:pointer">&#9989; Aufgaben</button>
     <button id="ktb-e" data-ktab="e" style="flex:1;padding:10px;border-radius:11px;border:2px solid #eee;background:white;color:#555;font-weight:800;font-size:12px;cursor:pointer">&#127869; Essen</button>
+    <button id="ktb-st" data-ktab="st" style="flex:1;padding:10px;border-radius:11px;border:2px solid #eee;background:white;color:#555;font-weight:800;font-size:12px;cursor:pointer">&#127912; Sticker</button>
     <button data-goto-start="1" style="padding:10px 13px;border-radius:11px;border:2px solid #eee;background:white;color:#555;font-weight:800;font-size:12px;cursor:pointer">&#8592;</button>
   </div>
 </div>
@@ -360,7 +361,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
-  planTemplates:{}, showTpl:false, mealRatings:{}, calMonthOffset:0, calView:"monat", quickAddDate:null,
+  planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, calMonthOffset:0, calView:"monat", quickAddDate:null,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", photo:null, age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -1027,6 +1028,10 @@ document.addEventListener("click", function(e) {
   if (aw) { awardS(aw.dataset.kid, parseInt(aw.dataset.s), aw.dataset.n); return; }
   const hd = e.target.closest("[data-hist-del]");
   if (hd) { if (confirm("Diesen Eintrag wirklich entfernen? Die Sterne werden entsprechend zurueckgebucht.")) deleteHistEntry(hd.dataset.histDel); return; }
+  const bs = e.target.closest("[data-buy-sticker]");
+  if (bs) { buySticker(bs.dataset.kid, bs.dataset.buySticker); return; }
+  const sw = e.target.closest("[data-spin-wheel]");
+  if (sw) { spinWheel(sw.dataset.spinWheel); return; }
   const te = e.target.closest("[data-task-edit]");
   if (te) { W.taskEdit = W.taskEdit===te.dataset.taskEdit?null:te.dataset.taskEdit; sv(); rSterne(); return; }
   const td = e.target.closest("[data-task-del]");
@@ -1194,8 +1199,8 @@ function pinKey(k) {
 
 // KIDS
 function updateKTabs() {
-  const colors = { s:"linear-gradient(135deg,#f57f17,#ff9800)", a:"linear-gradient(135deg,#4caf50,#2e7d32)", e:"linear-gradient(135deg,#667eea,#764ba2)" };
-  ["s","a","e"].forEach(x => {
+  const colors = { s:"linear-gradient(135deg,#f57f17,#ff9800)", a:"linear-gradient(135deg,#4caf50,#2e7d32)", e:"linear-gradient(135deg,#667eea,#764ba2)", st:"linear-gradient(135deg,#e91e63,#9c27b0)" };
+  ["s","a","e","st"].forEach(x => {
     const b = document.getElementById("ktb-"+x);
     if (!b) return;
     const on = x===W.ktab;
@@ -1267,6 +1272,38 @@ function renderKids() {
       }
       h += `</div>`;
     });
+  } else if (W.ktab==="st") {
+    h += `<div style="font-size:18px;font-weight:900;color:white;text-shadow:0 2px 6px rgba(0,0,0,0.2);margin-bottom:10px">Sticker &amp; Spass</div>`;
+    h += `<div style="background:rgba(255,255,255,0.92);border-radius:22px;padding:18px;text-align:center;margin-bottom:12px;box-shadow:0 8px 25px rgba(0,0,0,0.15)">`;
+    h += `<div style="font-size:15px;font-weight:800;color:#555;margin-bottom:10px">Gluecksrad (${WHEEL_COST} Sterne pro Dreh)</div>`;
+    const wheelColors = ["#f44336","#ff9800","#ffeb3b","#4caf50","#2196f3","#9c27b0","#e91e63","#00bcd4"];
+    const segAngle = 360/WHEEL_SEGMENTS.length;
+    const gradientStops = WHEEL_SEGMENTS.map((s,i) => `${wheelColors[i%wheelColors.length]} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(",");
+    h += `<div style="position:relative;width:200px;height:200px;margin:0 auto">`
+      + `<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:22px;z-index:2">&#128073;</div>`
+      + `<div id="wheel-face" style="width:200px;height:200px;border-radius:50%;background:conic-gradient(${gradientStops});border:4px solid white;box-shadow:0 4px 15px rgba(0,0,0,0.2)"></div>`
+      + `</div>`;
+    const canSpin = st>=WHEEL_COST && !wheelBusy;
+    h += `<button data-spin-wheel="${kid}" ${canSpin?"":"disabled"} style="margin-top:14px;background:${canSpin?"linear-gradient(135deg,#f57f17,#ff9800)":"#ddd"};color:white;border:none;border-radius:12px;padding:10px 22px;font-weight:800;font-size:13px;cursor:${canSpin?"pointer":"default"}">${wheelBusy?"Dreht...":"Drehen!"}</button>`;
+    if (lastWheelResult) h += `<div style="margin-top:10px;font-size:14px;font-weight:800;color:#2e7d32">&#127881; ${esc(lastWheelResult)}</div>`;
+    h += `</div>`;
+    h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#555;margin-bottom:10px">Sticker-Shop</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">`
+      + STICKERS.map(s => {
+          const can = st>=s.cost;
+          return `<button data-buy-sticker="${s.id}" data-kid="${kid}" ${can?"":"disabled"} style="background:${can?"#fff3e0":"#f5f5f5"};border:2px solid ${can?"#ffb300":"#eee"};border-radius:12px;padding:8px 4px;cursor:${can?"pointer":"default"}"><div style="font-size:26px">${s.emoji}</div><div style="font-size:9px;font-weight:700;color:#555;margin-top:2px">${s.name}</div><div style="font-size:9px;color:#f57f17;font-weight:800">${s.cost} &#11088;</div></button>`;
+        }).join("")
+      + `</div></div>`;
+    const myStickers = (W.stickers||{})[kid] || [];
+    h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#555;margin-bottom:10px">Meine Sticker (${myStickers.length})</div>`;
+    if (myStickers.length) {
+      h += `<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:26px">` + myStickers.map(id => {
+        const s = STICKERS.find(x=>x.id===id);
+        return s ? `<span title="${esc(s.name)}">${s.emoji}</span>` : "";
+      }).join("") + `</div>`;
+    } else {
+      h += `<div style="font-size:12px;color:#888">Noch keine Sticker gesammelt</div>`;
+    }
+    h += `</div>`;
   } else {
     h += `<div style="font-size:18px;font-weight:900;color:white;text-shadow:0 2px 6px rgba(0,0,0,0.2);margin-bottom:10px">Was esse ich heute?</div>`;
     [{lb:"Fruehstueck",slot:"f"},{lb:"Mittagessen",slot:"m"},{lb:"Abendessen",slot:"a"},{lb:"Snack",slot:"s"}].forEach(x => {
@@ -1451,6 +1488,73 @@ const BADGES = [
   {id:"stars100", name:"Stern-Profi", emoji:"&#128081;", check: kid => (W.total[kid]||0)>=100},
   {id:"redeem1", name:"Erste Belohnung", emoji:"&#127873;", check: kid => (W.hist||[]).some(e=>e.kid===kid&&e.type==="redeem")},
 ];
+const STICKERS = [
+  {id:"sun", emoji:"&#9728;&#65039;", name:"Sonne", cost:5},
+  {id:"heart", emoji:"&#128150;", name:"Herz", cost:8},
+  {id:"icecream", emoji:"&#127846;", name:"Eis", cost:8},
+  {id:"rainbow", emoji:"&#127752;", name:"Regenbogen", cost:10},
+  {id:"butterfly", emoji:"&#129419;", name:"Schmetterling", cost:10},
+  {id:"unicorn", emoji:"&#129412;", name:"Einhorn", cost:15},
+  {id:"rocket", emoji:"&#128640;", name:"Rakete", cost:15},
+  {id:"crown", emoji:"&#128081;", name:"Krone", cost:20},
+  {id:"dino", emoji:"&#129365;", name:"Dino", cost:20},
+  {id:"trophy", emoji:"&#127942;", name:"Pokal", cost:25},
+  {id:"gem", emoji:"&#128142;", name:"Diamant", cost:30},
+];
+const WHEEL_COST = 5;
+const WHEEL_SEGMENTS = [
+  {label:"1 Stern geschenkt", type:"stars", value:1},
+  {label:"Gratis-Sticker!", type:"sticker"},
+  {label:"Nochmal versuchen!", type:"none"},
+  {label:"Film aussuchen", type:"text"},
+  {label:"3 Sterne geschenkt", type:"stars", value:3},
+  {label:"Extra Gutenachtgeschichte", type:"text"},
+  {label:"Gratis-Sticker!", type:"sticker"},
+  {label:"5 Sterne geschenkt!", type:"stars", value:5},
+];
+let wheelBusy = false, lastWheelResult = null;
+function buySticker(kid, stickerId) {
+  const s = STICKERS.find(x=>x.id===stickerId);
+  if (!s || (W.stars[kid]||0) < s.cost) return;
+  W.stars[kid] -= s.cost;
+  if (!W.stickers) W.stickers = {};
+  if (!W.stickers[kid]) W.stickers[kid] = [];
+  W.stickers[kid].push(stickerId);
+  W.hist.push({id:Date.now(), kid, n:"Sticker: "+s.name, s:s.cost, type:"sticker", date:isoDate(new Date())});
+  if (W.hist.length>200) W.hist.shift();
+  sv(); renderKids(); showConfetti();
+}
+function applyWheelSegment(kid, seg) {
+  if (seg.type === "stars") { W.stars[kid]=(W.stars[kid]||0)+seg.value; W.total[kid]=(W.total[kid]||0)+seg.value; }
+  else if (seg.type === "sticker") {
+    const pick = STICKERS[Math.floor(Math.random()*STICKERS.length)];
+    if (!W.stickers) W.stickers = {};
+    if (!W.stickers[kid]) W.stickers[kid] = [];
+    W.stickers[kid].push(pick.id);
+  }
+}
+function spinWheel(kid) {
+  if (wheelBusy || (W.stars[kid]||0) < WHEEL_COST) return;
+  wheelBusy = true; lastWheelResult = null;
+  W.stars[kid] -= WHEEL_COST;
+  const idx = Math.floor(Math.random()*WHEEL_SEGMENTS.length);
+  const seg = WHEEL_SEGMENTS[idx];
+  W.hist.push({id:Date.now(), kid, n:"Gluecksrad gedreht", s:WHEEL_COST, type:"wheel", date:isoDate(new Date())});
+  if (W.hist.length>200) W.hist.shift();
+  sv(); renderKids();
+  const wheelEl = document.getElementById("wheel-face");
+  if (wheelEl) {
+    const segAngle = 360/WHEEL_SEGMENTS.length;
+    const targetAngle = 360*5 + (360 - (idx*segAngle + segAngle/2));
+    wheelEl.style.transition = "transform 3s cubic-bezier(0.17,0.67,0.12,0.99)";
+    wheelEl.style.transform = "rotate("+targetAngle+"deg)";
+  }
+  setTimeout(() => {
+    applyWheelSegment(kid, seg);
+    lastWheelResult = seg.label;
+    sv(); wheelBusy = false; renderKids(); showConfetti();
+  }, 3100);
+}
 function awardS(kid, s, n) {
   W.stars[kid]=(W.stars[kid]||0)+s; W.total[kid]=(W.total[kid]||0)+s;
   W.hist.push({id:Date.now(), kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
