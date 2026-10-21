@@ -317,6 +317,55 @@ const TC = {
   lernen:{bg:"#e3f2fd",bd:"#2196f3",tx:"#1565c0",lb:"Lernen"},
   ruhe:{bg:"#fce4ec",bd:"#e91e63",tx:"#880e4f",lb:"Ruhe"}
 };
+// Passende Emojis anhand des Titels -- und als Rueckfall ein zur Jahreszeit passendes Symbol
+// (stellt sich automatisch auf Fruehling/Sommer/Herbst um, nicht nur fuer diesen Winter).
+function seasonOf(d) {
+  const m = (d || new Date()).getMonth();
+  if (m === 11 || m <= 1) return "winter";
+  if (m <= 4) return "fruehling";
+  if (m <= 7) return "sommer";
+  return "herbst";
+}
+const SEASON_ICON = {
+  training: {winter:"⛸️", fruehling:"\u{1F331}", sommer:"☀️", herbst:"\u{1F342}"},
+  ruhe: {winter:"\u{1F56F}️", fruehling:"\u{1F33C}", sommer:"\u{1F333}", herbst:"\u{1F341}"},
+};
+const ACTIVITY_ICONS = [
+  [["schwimm"], "\u{1F3CA}"],
+  [["ski","langlauf"], "⛷️"],
+  [["schlitten","rodel"], "\u{1F6F7}"],
+  [["eislauf","schlittschuh"], "⛸️"],
+  [["schnee"], "☃️"],
+  [["fussball","fußball"], "⚽"],
+  [["judo","karate","kampfsport"], "\u{1F94B}"],
+  [["tanz","zumba"], "\u{1F483}"],
+  [["turnen","gymnastik"], "\u{1F938}"],
+  [["joggen","lauf"], "\u{1F3C3}"],
+  [["rad ","fahrrad","inline","skating","skaten"], "\u{1F6B4}"],
+  [["reiten","pferd"], "\u{1F40E}"],
+  [["yoga"], "\u{1F9D8}"],
+  [["klettern"], "\u{1F9D7}"],
+  [["floete","flöte","musik","klavier","gitarre"], "\u{1F3B5}"],
+  [["hausaufgab","lesen","lernzeit"], "\u{1F4DA}"],
+  [["spaziergang","wandern"], "\u{1F6B6}"],
+  [["spiel"], "\u{1F3B2}"],
+];
+function activityIcon(s) {
+  const t = (s.title || "").toLowerCase();
+  for (const [kws, icon] of ACTIVITY_ICONS) { if (kws.some(k => t.includes(k))) return icon; }
+  if (s.type === "lernen") return "\u{1F4D6}";
+  const season = seasonOf(new Date());
+  return (SEASON_ICON[s.type] || {})[season] || "\u{1F3F7}️";
+}
+function isSportDone(id) { return !!(W.sportDone && W.sportDone[id] === weekKey(new Date())); }
+function sortSched(arr) {
+  return [...arr].sort((a, b) => {
+    if (!a.time && !b.time) return 0;
+    if (!a.time) return 1;
+    if (!b.time) return -1;
+    return a.time.localeCompare(b.time);
+  });
+}
 const DEF_REC = [
   {id:"rc1",day:"Mo",time:"09:00",title:"Oma WauWau",who:"Alia+Tiana",color:"#ff7043"},
   {id:"rc2",day:"Di",time:"15:30",title:"Turnen",who:"Alia",color:"#9c27b0"},
@@ -384,7 +433,7 @@ let W = {
   ],
   recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
-  planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, favRecipes:[], calMonthOffset:0, calView:"monat", quickAddDate:null,
+  planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, favRecipes:[], sportDone:{}, calMonthOffset:0, calView:"monat", quickAddDate:null,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
   kids:[
     {id:"alia", name:"Alia", emoji:"\u{1F467}", photo:null, age:7, kcal:1400, vitC:70, iron:10, calcium:900},
@@ -1102,6 +1151,8 @@ document.addEventListener("click", function(e) {
   if (ad) { W.apts=W.apts.filter(a=>a.id!==parseInt(ad.dataset.aptDel)); sv(); rTermine(); return; }
   const sd = e.target.closest("[data-sched-del]");
   if (sd) { W.sched=W.sched.filter(s=>s.id!==sd.dataset.schedDel); sv(); rSport(); return; }
+  const spd = e.target.closest("[data-sport-done]");
+  if (spd) { const id=spd.dataset.sportDone; if(!W.sportDone) W.sportDone={}; const wk=weekKey(new Date()); if(W.sportDone[id]===wk) delete W.sportDone[id]; else W.sportDone[id]=wk; sv(); rSport(); return; }
   const ck = e.target.closest("[data-chk]");
   if (ck) { const k=ck.dataset.chk; W.chk[k]=!W.chk[k]; sv(); rEinkauf(); return; }
   const rck = e.target.closest("[data-reset-chk]");
@@ -1997,7 +2048,8 @@ function rEinkauf() {
 // SPORT
 function saveSched() {
   const ti=document.getElementById("nsti")?.value.trim(); if(!ti)return;
-  W.sched.push({id:"u"+Date.now(),day:document.getElementById("nsd")?.value,type:document.getElementById("nst")?.value,title:ti,who:document.getElementById("nstw")?.value||"Familie"});
+  const time=document.getElementById("nstime")?.value||"";
+  W.sched.push({id:"u"+Date.now(),day:document.getElementById("nsd")?.value,type:document.getElementById("nst")?.value,title:ti,who:document.getElementById("nstw")?.value||"Familie",time});
   W.showSF=false; sv(); rSport();
 }
 function getSportTally() {
@@ -2008,22 +2060,22 @@ function getSportTally() {
   return tally;
 }
 function rSport() {
-  const d=DAYS[W.day], its=W.sched.filter(s=>s.day===d);
+  const d=DAYS[W.day], its=sortSched(W.sched.filter(s=>s.day===d));
   const whoOpts = ["Familie","Kinder",...W.kids.map(k=>k.name),...(W.parents||[]).map(p=>p.name)];
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Bewegung - ${d}</div><button data-toggle-sf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Aktivitaet</button></div>`;
   if (W.showSF) {
-    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><select id="nstw" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:13px;margin-bottom:8px">${whoOpts.map(n=>`<option${n==="Familie"?" selected":""}>${esc(n)}</option>`).join("")}</select><button data-save-sched="1" class="sb">Speichern</button></div>`;
+    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select><input id="nstime" type="time" style="width:86px;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><select id="nstw" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:13px;margin-bottom:8px">${whoOpts.map(n=>`<option${n==="Familie"?" selected":""}>${esc(n)}</option>`).join("")}</select><button data-save-sched="1" class="sb">Speichern</button></div>`;
   }
   if (!its.length) h += `<div class="eb">Freier Tag</div>`;
   its.forEach(s => {
-    const c=TC[s.type];
-    h += `<div class="spk" style="background:${c.bg};border-color:${c.bd}"><div style="display:flex;align-items:center;gap:7px"><div style="flex:1"><div style="font-weight:800;font-size:13px;color:${c.tx}">${s.title}</div><div style="font-size:10px;color:${c.tx};opacity:.7">${s.who}</div></div><span style="background:${c.bd}30;color:${c.tx};border-radius:6px;padding:2px 6px;font-size:9px;font-weight:700">${c.lb}</span><button data-sched-del="${s.id}" class="dlb">x</button></div></div>`;
+    const c=TC[s.type], done=isSportDone(s.id);
+    h += `<div class="spk" style="background:${c.bg};border-color:${c.bd};${done?"opacity:.55":""}"><div style="display:flex;align-items:center;gap:7px"><button data-sport-done="${s.id}" title="Diese Woche erledigt?" style="background:${done?c.bd:"transparent"};color:${done?"white":c.bd};border:2px solid ${c.bd};border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0">${done?"&#10003;":""}</button><div style="flex:1"><div style="font-weight:800;font-size:13px;color:${c.tx};${done?"text-decoration:line-through":""}">${activityIcon(s)} ${s.title}${s.time?` <span style="font-weight:600;opacity:.7">· ${s.time}</span>`:""}</div><div style="font-size:10px;color:${c.tx};opacity:.7">${s.who}</div></div><span style="background:${c.bd}30;color:${c.tx};border-radius:6px;padding:2px 6px;font-size:9px;font-weight:700">${c.lb}</span><button data-sched-del="${s.id}" class="dlb">x</button></div></div>`;
   });
   h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:12px;margin-bottom:7px">Wochenplan</div><div class="card">`;
   DAYS.forEach(dd => {
-    const i2=W.sched.filter(s=>s.day===dd);
+    const i2=sortSched(W.sched.filter(s=>s.day===dd));
     h += `<div class="wr"><div style="width:24px;font-weight:900;font-size:11px;color:#764ba2;padding-top:2px;flex-shrink:0">${dd}</div><div class="wt">`;
-    if (i2.length) i2.forEach(s => { const c=TC[s.type]; h += `<span class="wtg" style="background:${c.bg};color:${c.tx}">${s.title}</span>`; });
+    if (i2.length) i2.forEach(s => { const c=TC[s.type]; h += `<span class="wtg" style="background:${c.bg};color:${c.tx}">${activityIcon(s)} ${s.title}${s.time?` ${s.time}`:""}</span>`; });
     else h += `<span style="font-size:10px;color:var(--t4)">Frei</span>`;
     h += `</div></div>`;
   });
