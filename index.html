@@ -60,6 +60,8 @@ input,select,textarea{font-family:inherit}
 .wr{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start}
 .wt{display:flex;flex-wrap:wrap;gap:3px}
 .wtg{border-radius:6px;padding:1px 6px;font-size:10px;font-weight:600}
+.confetti-piece{position:fixed;width:8px;height:14px;top:-20px;z-index:9999;pointer-events:none;animation:confetti-fall 1.4s ease-in forwards}
+@keyframes confetti-fall{to{transform:translateY(105vh) rotate(540deg);opacity:0.3}}
 .spk{border-radius:13px;padding:11px 13px;margin-bottom:7px;border-left:5px solid}
 .sg{display:grid;grid-template-columns:38px repeat(5,1fr);gap:2px;font-size:9px}
 .sc{border-radius:4px;padding:3px 2px;text-align:center;font-weight:600;min-height:30px;display:flex;align-items:center;justify-content:center;line-height:1.2}
@@ -435,13 +437,16 @@ async function initCloudSync() {
       if (!remote || !remote.updatedAt || !remote.data) { syncStatus = "synced"; renderSyncBadge(); return; }
       if (remote.updatedAt <= syncLastPushedAt) { syncStatus = "synced"; renderSyncBadge(); return; }
       syncApplyingRemote = true;
+      const starsBefore = {...(W.stars||{})};
       Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
       migrateHistIds();
       syncLastPushedAt = remote.updatedAt;
       try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
       syncApplyingRemote = false;
       syncStatus = "synced"; renderSyncBadge();
-      renderHeader(); renderDays(); renderCurrent();
+      const starsIncreased = Object.keys(W.stars||{}).some(k => (W.stars[k]||0) > (starsBefore[k]||0));
+      if (starsIncreased) showConfetti();
+      renderHeader(); renderDays(); renderCurrent(); renderKids();
     }, () => { syncStatus = "error"; renderSyncBadge(); });
   } catch (e) {
     syncStatus = "error"; renderSyncBadge();
@@ -1211,11 +1216,29 @@ function renderKids() {
   h += `<div style="text-align:center;padding:12px 0 16px"><div style="display:flex;justify-content:center">${avatarHtml(kidById(kid), 56)}</div><div style="font-size:24px;font-weight:900;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2);margin-top:4px">Hallo ${name}!</div></div>`;
 
   if (W.ktab==="s") {
+    const tot = W.total[kid]||0;
+    const {cur:mascot, next:mascotNext} = mascotForStars(tot);
+    const mascotPc = mascotNext ? Math.round(((tot-mascot.min)/(mascotNext.min-mascot.min))*100) : 100;
+    h += `<div style="background:rgba(255,255,255,0.92);border-radius:22px;padding:18px;text-align:center;margin-bottom:12px;box-shadow:0 8px 25px rgba(0,0,0,0.15)">`;
+    h += `<div style="font-size:64px;line-height:1">${mascot.emoji}</div>`;
+    h += `<div style="font-size:15px;font-weight:800;color:#555;margin-top:6px">${mascot.name}</div>`;
+    if (mascotNext) {
+      h += `<div class="bw" style="height:10px;margin-top:8px"><div class="bf" style="width:${mascotPc}%;background:linear-gradient(90deg,#f57f17,#ff9800)"></div></div><div style="font-size:10px;color:#888;margin-top:3px">Naechste Entwicklung bei ${mascotNext.min} Sternen gesamt</div>`;
+    } else {
+      h += `<div style="font-size:11px;color:#888;margin-top:6px">Hoechste Entwicklungsstufe erreicht!</div>`;
+    }
+    h += `</div>`;
     h += `<div style="background:rgba(255,255,255,0.92);border-radius:22px;padding:20px;text-align:center;margin-bottom:12px;box-shadow:0 8px 25px rgba(0,0,0,0.15)">`;
     h += `<div style="font-size:15px;font-weight:800;color:#555;margin-bottom:6px">Meine Sterne</div>`;
     h += `<div style="font-size:68px;font-weight:900;color:#f57f17;line-height:1">${st}</div>`;
     h += `<div style="font-size:28px;letter-spacing:3px;margin-top:8px">${Array(Math.min(st,10)).fill("&#11088;").join("")}${st>10?" +"+(st-10):""}</div>`;
     h += `</div>`;
+    h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#555;margin-bottom:10px">Meine Abzeichen</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">`
+      + BADGES.map(b => {
+          const won = b.check(kid);
+          return `<div style="text-align:center;opacity:${won?1:0.3}"><div style="font-size:26px">${b.emoji}</div><div style="font-size:9px;color:#555;font-weight:700;margin-top:2px">${b.name}</div></div>`;
+        }).join("")
+      + `</div></div>`;
     const available = (W.rew||[]).filter(r=>st>=r.s);
     if (available.length) {
       h += `<div style="background:rgba(255,255,255,0.92);border-radius:18px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#2e7d32;margin-bottom:8px">&#127881; Schon freigeschaltet</div>`
@@ -1384,15 +1407,59 @@ function rPlan() {
 }
 
 // STERNE
+function showConfetti() {
+  const colors = ["#f44336","#ff9800","#ffeb3b","#4caf50","#2196f3","#9c27b0","#e91e63"];
+  for (let i=0;i<36;i++) {
+    const el = document.createElement("div");
+    el.className = "confetti-piece";
+    el.style.left = (Math.random()*100)+"vw";
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDelay = (Math.random()*0.3)+"s";
+    el.style.animationDuration = (1+Math.random()*0.9)+"s";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2300);
+  }
+}
+const MASCOT_TIERS = [
+  {min:0, emoji:"&#128037;", name:"Kleines Kueken"},
+  {min:20, emoji:"&#128037;&#127775;", name:"Freches Kueken"},
+  {min:50, emoji:"&#129418;", name:"Schlauer Fuchs"},
+  {min:100, emoji:"&#129409;", name:"Starker Loewe"},
+  {min:200, emoji:"&#128009;", name:"Drachen-Meister"},
+];
+function mascotForStars(total) {
+  let cur = MASCOT_TIERS[0];
+  for (const t of MASCOT_TIERS) if (total>=t.min) cur = t;
+  const next = MASCOT_TIERS.find(t => t.min > total);
+  return {cur, next};
+}
+function hasHistStreak(kid, days) {
+  const dates = new Set((W.hist||[]).filter(e=>e.kid===kid&&e.type==="award").map(e=>e.date));
+  let count=0, d=new Date(); d.setHours(0,0,0,0);
+  for (let i=0;i<days;i++) {
+    if (dates.has(isoDate(d))) count++; else break;
+    d.setDate(d.getDate()-1);
+  }
+  return count>=days;
+}
+const BADGES = [
+  {id:"first", name:"Erster Stern", emoji:"&#127775;", check: kid => (W.hist||[]).some(e=>e.kid===kid&&e.type==="award")},
+  {id:"ten", name:"Fleissig", emoji:"&#127941;", check: kid => (W.hist||[]).filter(e=>e.kid===kid&&e.type==="award").length>=10},
+  {id:"fifty", name:"Superfleissig", emoji:"&#127942;", check: kid => (W.hist||[]).filter(e=>e.kid===kid&&e.type==="award").length>=50},
+  {id:"streak7", name:"7-Tage-Serie", emoji:"&#128293;", check: kid => hasHistStreak(kid,7)},
+  {id:"stars50", name:"Stern-Sammler", emoji:"&#10024;", check: kid => (W.total[kid]||0)>=50},
+  {id:"stars100", name:"Stern-Profi", emoji:"&#128081;", check: kid => (W.total[kid]||0)>=100},
+  {id:"redeem1", name:"Erste Belohnung", emoji:"&#127873;", check: kid => (W.hist||[]).some(e=>e.kid===kid&&e.type==="redeem")},
+];
 function awardS(kid, s, n) {
   W.stars[kid]=(W.stars[kid]||0)+s; W.total[kid]=(W.total[kid]||0)+s;
   W.hist.push({id:Date.now(), kid,n,s,type:"award",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
-  sv(); rSterne();
+  sv(); rSterne(); showConfetti();
 }
 function redeemR(kid, s, n) {
   if ((W.stars[kid]||0)<s) return;
   W.stars[kid]-=s; W.hist.push({id:Date.now(), kid,n,s,type:"redeem",date:isoDate(new Date())}); if(W.hist.length>200)W.hist.shift();
-  sv(); rSterne();
+  sv(); rSterne(); showConfetti();
 }
 function deleteHistEntry(id) {
   const e = (W.hist||[]).find(x => String(x.id)===String(id));
