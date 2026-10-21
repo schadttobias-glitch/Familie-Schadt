@@ -661,6 +661,22 @@ function saveNewRecipe(key) {
   W.mealNewForm = null; W.mealEdit = null;
   sv(); rPlan();
 }
+const SHOP_CATEGORIES = [
+  {name:"Obst & Gemuese", keywords:["apfel","aepfel","banane","beer","zitrone","orange","birne","trauben","gemuese","karotte","moehre","zucchini","paprika","gurke","tomate","spinat","brokkoli","mais","erbsen","kartoffel","zwiebel","knoblauch","lauch","salat","avocado","rucola","radieschen","mango","champignon","kresse","petersilie","basilikum","dill","schnittlauch","obst","frucht","fruechte"]},
+  {name:"Fleisch, Fisch & Eier", keywords:["haehnchen","pute","huhn","fleisch","braten","lachs","fisch","kabeljau","weissfisch","ei","eier","tofu"]},
+  {name:"Milchprodukte & Kaese", keywords:["milch","joghurt","quark","kaese","sahne","butter","skyr","mozzarella","ricotta","feta","frischkaese","huettenkaese","parmesan","buttermilch","gouda","edamer"]},
+  {name:"Brot, Getreide & Backwaren", keywords:["mehl","nudeln","reis","haferflocken","quinoa","brot","toast","broetchen","wraps","naan","cracker","backpulver","hefe","griess","couscous","bagel","paniermehl","muesli","cracker"]},
+  {name:"Konserven & Huelsenfruechte", keywords:["dose","bohnen","linsen","kichererbsen","kokosmilch"]},
+  {name:"Gewuerze, Oele & Vorrat", keywords:["honig","zimt","oel","salz","pfeffer","kurkuma","curry","oregano","majoran","sojasosse","sesam","rosmarin","thymian","paprikapulver","erdnussbutter","hummus","zucker","chia","aliana","bruehe","kokosfett"]},
+  {name:"Suesses & Snacks", keywords:["schokolade","popcorn","nuesse","mandeln","walnuesse","rosinen","aprikosen","granola","trockenfruechte"]},
+];
+function categorizeIngredient(text) {
+  const lower = text.toLowerCase();
+  for (const cat of SHOP_CATEGORIES) {
+    if (cat.keywords.some(kw => lower.includes(kw))) return cat.name;
+  }
+  return "Sonstiges";
+}
 function getPlanIngredients() {
   const seen = new Set(), out = [];
   for (let di=0; di<7; di++) {
@@ -1909,19 +1925,27 @@ function rEinkauf() {
   const wpItems = getPlanIngredients();
   if (wpItems.length) {
     const dnWp = wpItems.filter(x=>W.chk["wp-"+x]).length;
+    const grouped = {};
+    wpItems.forEach(x => { const cat = categorizeIngredient(x); (grouped[cat]=grouped[cat]||[]).push(x); });
+    const catOrder = [...SHOP_CATEGORIES.map(c=>c.name), "Sonstiges"];
     h += `<div class="card" style="${dnWp===wpItems.length?"opacity:.7":""}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div class="ct" style="margin:0">Aus dem Wochenplan</div><span style="font-size:10px;font-weight:700;color:${dnWp===wpItems.length?"#4caf50":"#aaa"}">${dnWp===wpItems.length?"Fertig":dnWp+"/"+wpItems.length}</span></div>`;
-    wpItems.forEach(x => {
-      const k="wp-"+x, c=W.chk[k];
-      h += `<div class="si" data-chk="${k}"><div class="chkbox${c?" on":""}">${c?"v":""}</div><span style="font-size:12px;color:${c?"var(--t3)":"var(--t1)"};text-decoration:${c?"line-through":"none"}">${x}</span></div>`;
+    catOrder.forEach(catName => {
+      const items = grouped[catName];
+      if (!items || !items.length) return;
+      h += `<div style="font-size:9px;font-weight:800;color:var(--t3);letter-spacing:0.5px;margin:8px 0 4px">${catName.toUpperCase()}</div>`;
+      [...items].sort((a,b) => (W.chk["wp-"+a]?1:0) - (W.chk["wp-"+b]?1:0)).forEach(x => {
+        const k="wp-"+x, c=W.chk[k];
+        h += `<div class="si" data-chk="${k}"><div class="chkbox${c?" on":""}">${c?"v":""}</div><span style="font-size:12px;color:${c?"var(--t3)":"var(--t1)"};text-decoration:${c?"line-through":"none"}">${esc(x)}</span></div>`;
+      });
     });
     h += `</div>`;
   }
   SHOP.forEach((cat,ci) => {
     const dn=cat.i.filter((x,ii)=>W.chk[ci+"-"+ii]).length;
     h += `<div class="card" style="${dn===cat.i.length?"opacity:.7":""}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div class="ct" style="margin:0">${cat.c}</div><span style="font-size:10px;font-weight:700;color:${dn===cat.i.length?"#4caf50":"#aaa"}">${dn===cat.i.length?"Fertig":dn+"/"+cat.i.length}</span></div>`;
-    cat.i.forEach((x,ii) => {
-      const k=`${ci}-${ii}`, c=W.chk[k];
-      h += `<div class="si" data-chk="${k}"><div class="chkbox${c?" on":""}">${c?"v":""}</div><span style="font-size:12px;color:${c?"var(--t3)":"var(--t1)"};text-decoration:${c?"line-through":"none"}">${x}</span></div>`;
+    cat.i.map((x,ii)=>ii).sort((ia,ib) => (W.chk[ci+"-"+ia]?1:0) - (W.chk[ci+"-"+ib]?1:0)).forEach(ii => {
+      const x = cat.i[ii], k=`${ci}-${ii}`, c=W.chk[k];
+      h += `<div class="si" data-chk="${k}"><div class="chkbox${c?" on":""}">${c?"v":""}</div><span style="font-size:12px;color:${c?"var(--t3)":"var(--t1)"};text-decoration:${c?"line-through":"none"}">${esc(x)}</span></div>`;
     });
     h += `</div>`;
   });
