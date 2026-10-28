@@ -655,6 +655,18 @@ function migrateHistIds() {
   (W.hist||[]).forEach((e, i) => { if (e.id == null) { e.id = Date.now()+i; changed = true; } });
   if (changed) sv();
 }
+const TOBI_TRAININGSPLAN = [
+  {id:"tp1", day:"Mo", type:"training", title:"Ruecken- & Bauchtraining (Tiefenmuskulatur)", who:"Tobi", time:""},
+  {id:"tp2", day:"Mi", type:"training", title:"Knie-Aufbau & Beinachse", who:"Tobi", time:""},
+  {id:"tp3", day:"Fr", type:"training", title:"Mobility & Ganzkoerper", who:"Tobi", time:""},
+];
+function migrateTrainingsplan() {
+  if (W.trainingsplanAdded) return;
+  if (!W.sched) W.sched = [];
+  TOBI_TRAININGSPLAN.forEach(e => { if (!W.sched.some(s => s.id === e.id)) W.sched.push(e); });
+  W.trainingsplanAdded = true;
+  sv();
+}
 const PLAN_RID = [
   {f:"mb", m:"nu", a:"la", s:"jb"},
   {f:"pf", m:"hr", a:"ss", s:"ae2"},
@@ -2118,6 +2130,7 @@ function rSport() {
 ld();
 migrateMealOv();
 migrateHistIds();
+migrateTrainingsplan();
 renderHeader();
 if (isUnlocked()) { showScr("start"); } else { showScr("lock"); renderLockUI(); }
 initCloudSync();
