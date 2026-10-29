@@ -512,6 +512,7 @@ async function initCloudSync() {
       syncApplyingRemote = true;
       Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
       migrateHistIds();
+      migrateTrainingsplan();
       syncLastPushedAt = remote.updatedAt;
       try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
       syncApplyingRemote = false;
