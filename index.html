@@ -660,11 +660,34 @@ function migrateHistIds() {
 }
 const TOBI_TRAININGSPLAN = [
   {id:"tp1", day:"Mo", type:"training", title:"Ruecken- & Bauchtraining (Tiefenmuskulatur)", who:"Tobi", time:"",
-    notes:["Katze-Kamel zum Aufwaermen, 10x","McGill Curl-Up (nur Kopf/Schultern leicht heben, Lendenwirbelsaeule bleibt neutral -- kein klassischer Crunch!), 3x8","Bird-Dog (Arm + gegenueberliegendes Bein strecken), 3x8 je Seite","Side Plank, auf Knien wenn noetig, 3x20-30 Sek je Seite","Dead Bug, 3x10 je Seite","Glute Bridge, 3x12","Vermeiden: klassische Sit-ups, Rumpfdrehungen mit Gewicht, gebuecktes Heben"]},
+    notes:[
+      "Katze-Kamel (Aufwaermen): Vierfuesslerstand, Ruecken abwechselnd zur Decke runden und durchhaengen lassen -- lockert die Wirbelsaeule. 10x",
+      "McGill Curl-Up: Rueckenlage, ein Bein angewinkelt, Haende unter dem unteren Ruecken. Nur Kopf & Schultern ein kleines Stueck abheben -- NICHT wie ein Sit-up hochkommen, der untere Ruecken bleibt flach am Boden. 3x8",
+      "Bird-Dog: Vierfuesslerstand, einen Arm nach vorne UND das gegenueberliegende Bein nach hinten gleichzeitig strecken, kurz halten, Seite wechseln. 3x8 je Seite",
+      "Side Plank (Seitstuetz): Seitlich auf den Unterarm stuetzen, Koerper bildet eine gerade Linie, Huefte anheben. Einfacher: Knie statt Fuesse am Boden lassen. 3x20-30 Sek je Seite",
+      "Dead Bug: Rueckenlage, Arme nach oben gestreckt, Knie 90 Grad in der Luft angewinkelt. Abwechselnd einen Arm nach hinten UND das gegenueberliegende Bein ausstrecken, der untere Ruecken bleibt am Boden. 3x10 je Seite",
+      "Glute Bridge (Gesaessbruecke): Rueckenlage, Beine angewinkelt, Fuesse aufgestellt. Becken hochdruecken bis Oberkoerper und Oberschenkel eine Linie bilden, dann absenken. 3x12",
+      "Vermeiden: klassische Sit-ups/Crunches, Rumpfdrehungen mit Gewicht, gebuecktes Heben"],
+    },
   {id:"tp2", day:"Mi", type:"training", title:"Knie-Aufbau & Beinachse", who:"Tobi", time:"",
-    notes:["5 Min lockeres Radfahren/Ergometer zum Aufwaermen","Wall Sit, nicht zu tief, 3x20-30 Sek","Terminal Knee Extension mit Band, 3x15 je Seite (staerkt den inneren Oberschenkelmuskel)","Step-Ups auf niedrige Stufe -- Knie bewusst nicht nach innen fallen lassen, 3x10 je Seite","Clamshells mit Mini-Band, 3x15 je Seite","Monster Walk seitlich mit Band, 3x10 Schritte je Richtung","Wadenheber, 3x15","Vermeiden: tiefe Kniebeugen unter Last, Ausfallschritte mit tiefem Winkel, Joggen ueber 4-5 km"]},
+    notes:[
+      "5 Min lockeres Radfahren/Ergometer zum Aufwaermen",
+      "Wall Sit (Wandsitz): Ruecken an die Wand, in die Kniebeuge-Position 'setzen' als stuende ein unsichtbarer Stuhl da (Knie ca. 90 Grad, nicht tiefer), so lange wie moeglich halten. 3x20-30 Sek",
+      "Terminal Knee Extension: Theraband an einem festen Punkt befestigen und ums Knie legen, Bein leicht angewinkelt, dann die letzten Grad gegen den Widerstand durchstrecken -- staerkt gezielt den inneren Oberschenkelmuskel, wichtig bei Knorpelschaden. 3x15 je Seite",
+      "Step-Ups: Mit einem Fuss auf eine niedrige Stufe/einen Hocker steigen, hochdruecken, kontrolliert wieder runter. Wichtig: Knie darf dabei nicht nach innen einknicken. 3x10 je Seite",
+      "Clamshells (Muschel-Uebung): Seitlich liegen, Knie angewinkelt uebereinander, Mini-Band um die Oberschenkel. Oberes Knie wie eine Muschel oeffnen, Fuesse bleiben zusammen. 3x15 je Seite",
+      "Monster Walk: Mini-Band um die Knoechel oder Oberschenkel, in leichter Hocke seitlich gegen den Widerstand des Bandes entlanglaufen. 3x10 Schritte je Richtung",
+      "Wadenheber: Auf die Zehenspitzen stellen und kontrolliert wieder absenken. 3x15",
+      "Vermeiden: tiefe Kniebeugen unter Last, Ausfallschritte mit tiefem Winkel, Joggen ueber 4-5 km"],
+    },
   {id:"tp3", day:"Fr", type:"training", title:"Mobility & Ganzkoerper", who:"Tobi", time:"",
-    notes:["Brustwirbelsaeulen-Rotation, 2x8 je Seite","Hueftbeuger-/Oberschenkelrueckseite-Dehnung, je 2x30 Sek","Liegestuetz auf Knien oder an der Wand, 3x10","Rudern mit Band, 3x12","Ausklang: Rueckenlage, Beine angewinkelt, 5 Min Bauchatmung"]},
+    notes:[
+      "Brustwirbelsaeulen-Rotation: Vierfuesslerstand, eine Hand hinter den Kopf, Ellbogen nach oben zur Decke drehen (Oberkoerper dreht mit), dann zurueck unter den Koerper fuehren. 2x8 je Seite",
+      "Hueftbeuger-Dehnung: Ausfallschritt-Position, hinteres Knie am Boden, Becken leicht nach vorne schieben bis vorne an der Huefte ein Zug spuerbar ist. 2x30 Sek je Seite",
+      "Liegestuetz auf Knien oder an der Wand: Koerperspannung halten, Brust Richtung Boden/Wand absenken, wieder hochdruecken. 3x10",
+      "Rudern mit Band: Band vor sich befestigen, Ellbogen nach hinten ziehen, Schulterblaetter zusammenziehen. 3x12",
+      "Ausklang: Rueckenlage, Beine angewinkelt, ruhig in den Bauch atmen, 5 Minuten entspannen"],
+    },
 ];
 function migrateTrainingsplan() {
   if (!W.trainingsplanAdded) {
@@ -673,13 +696,13 @@ function migrateTrainingsplan() {
     W.trainingsplanAdded = true;
     sv();
   }
-  if (!W.trainingsplanNotesAdded) {
+  if (!W.trainingsplanNotesV2Added) {
     if (!W.sched) W.sched = [];
     TOBI_TRAININGSPLAN.forEach(e => {
       const existing = W.sched.find(s => s.id === e.id);
       if (existing) existing.notes = e.notes;
     });
-    W.trainingsplanNotesAdded = true;
+    W.trainingsplanNotesV2Added = true;
     sv();
   }
 }
