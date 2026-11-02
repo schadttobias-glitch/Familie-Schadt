@@ -172,7 +172,8 @@ input,select,textarea{font-family:inherit}
   <div id="day-row" style="display:flex;gap:5px;padding:7px 10px 4px;overflow-x:auto;scrollbar-width:none"></div>
   <div id="week-row" style="display:flex;align-items:center;justify-content:center;gap:8px;color:white;font-size:11px;font-weight:700;padding:0 10px 5px"></div>
   <div id="tab-row" style="display:flex;margin:4px 10px;background:rgba(255,255,255,0.15);border-radius:12px;padding:3px;gap:2px;overflow-x:auto;scrollbar-width:none">
-    <button class="tb on" data-tab="plan"><span>&#127869;</span>Essen</button>
+    <button class="tb on" data-tab="uebersicht"><span>&#127968;</span>Heute</button>
+    <button class="tb" data-tab="plan"><span>&#127869;</span>Essen</button>
     <button class="tb" data-tab="sterne"><span>&#11088;</span>Sterne</button>
     <button class="tb" data-tab="schule"><span>&#127890;</span>Schule</button>
     <button class="tb" data-tab="termine"><span>&#128197;</span>Termine</button>
@@ -181,7 +182,8 @@ input,select,textarea{font-family:inherit}
     <button class="tb" data-tab="einstellungen"><span>&#9881;&#65039;</span>Mehr</button>
   </div>
   <div id="app-content" style="padding:0 10px">
-    <div id="t-plan"></div>
+    <div id="t-uebersicht"></div>
+    <div id="t-plan" style="display:none"></div>
     <div id="t-sterne" style="display:none"></div>
     <div id="t-schule" style="display:none"></div>
     <div id="t-termine" style="display:none"></div>
@@ -193,6 +195,12 @@ input,select,textarea{font-family:inherit}
 
 <script>
 // DATA
+const VALID_TABS = ["uebersicht","plan","sterne","schule","termine","einkauf","sport","einstellungen"];
+let requestedTab = null;
+try {
+  const qp = new URLSearchParams(location.search).get("tab");
+  if (qp && VALID_TABS.includes(qp)) requestedTab = qp;
+} catch(e) {}
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYSF = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 // Quelle: Bayerisches Staatsministerium fuer Unterricht und Kultus (km.bayern.de/termine/ferien-und-feiertage),
@@ -410,7 +418,7 @@ const DEF_REW = [
 
 // STATE
 let W = {
-  day:0, tab:"plan", chk:{}, apts:[{id:1,day:"Mo",time:"10:00",title:"Zahnarzt Alia",who:"Alia",color:"#e91e63"}], imported:[],
+  day:0, tab:"uebersicht", chk:{}, apts:[{id:1,day:"Mo",time:"10:00",title:"Zahnarzt Alia",who:"Alia",color:"#e91e63"}], imported:[],
   rec:JSON.parse(JSON.stringify(DEF_REC)),
   stars:{alia:0,tiana:0}, total:{alia:0,tiana:0},
   tasks:JSON.parse(JSON.stringify(DEF_TASKS)),
@@ -1033,6 +1041,72 @@ function personCard(k, ageField) {
     + `<div style="display:flex;gap:6px;margin-bottom:8px">${fieldBlock("Eisen (mg)", `<input id="ki_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.iron}">`)}${fieldBlock("Calcium (mg)", `<input id="kc_${k.id}" type="number" class="fi" style="margin-bottom:0" value="${k.calcium}">`)}</div>`
     + `<button data-save-person="${k.id}" data-group="${k.id==="alia"||k.id==="tiana"?"kids":"parents"}" class="sb">Speichern</button></div>`;
 }
+// PUSH-BENACHRICHTIGUNGEN (taegliche Zusammenfassung)
+const VAPID_PUBLIC_KEY = "BF2DxM2Nkq__QDb7guD9ctwj9s8CREhX5TBEeRh9OddvzvNSFgSlzQE0VPDqQZ6AgwJ9wEZZroTi6fT0Blo8wuc";
+let pushUiStatus = "checking";
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+function getPushDeviceId() {
+  let id;
+  try { id = localStorage.getItem("fs11-pushId"); } catch(e) {}
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : "p"+Date.now()+Math.random().toString(36).slice(2));
+    try { localStorage.setItem("fs11-pushId", id); } catch(e) {}
+  }
+  return id;
+}
+async function refreshPushUiStatus() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) { pushUiStatus = "unsupported"; return; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    pushUiStatus = sub ? "on" : "off";
+  } catch(e) { pushUiStatus = "off"; }
+}
+async function enablePush() {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { pushUiStatus = "error"; rEinstellungen(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+    await fetch("/api/save-push-subscription", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: getPushDeviceId(), subscription: sub.toJSON ? sub.toJSON() : sub }),
+    });
+    pushUiStatus = "on";
+  } catch(e) { pushUiStatus = "error"; }
+  rEinstellungen();
+}
+async function disablePush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+    await fetch("/api/save-push-subscription", {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: getPushDeviceId() }),
+    });
+  } catch(e) {}
+  pushUiStatus = "off";
+  rEinstellungen();
+}
+function pushCard() {
+  const map = {
+    checking: {c:"#999", t:"Pruefe...", d:"", btn:""},
+    unsupported: {c:"#999", t:"Nicht unterstuetzt", d:"Dieses Geraet/dieser Browser unterstuetzt leider keine Push-Benachrichtigungen.", btn:""},
+    off: {c:"#999", t:"Aus", d:"Schickt morgens eine Nachricht mit den heutigen Terminen, Sport und dem Sterne-Stand.", btn:`<button data-push-enable="1" class="sb">Aktivieren</button>`},
+    on: {c:"#4caf50", t:"Aktiv", d:"Dieses Geraet bekommt morgens eine taegliche Zusammenfassung.", btn:`<button data-push-disable="1" style="background:#ffebee;color:#f44336;border:none;border-radius:9px;padding:9px;font-weight:800;cursor:pointer;width:100%">Deaktivieren</button>`},
+    error: {c:"#f44336", t:"Fehler", d:"Benachrichtigungen konnten nicht aktiviert werden (z.B. Berechtigung verweigert).", btn:`<button data-push-enable="1" class="sb">Erneut versuchen</button>`}
+  };
+  const s = map[pushUiStatus] || map.checking;
+  if (pushUiStatus === "checking") { refreshPushUiStatus().then(() => { if (W.tab==="einstellungen") rEinstellungen(); }); }
+  return `<div class="card"><div class="ct">Taegliche Erinnerung</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:10px;height:10px;border-radius:50%;background:${s.c};flex-shrink:0"></span><b style="font-size:13px;color:var(--t1)">${s.t}</b></div><div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:8px">${s.d}</div>${s.btn}</div>`;
+}
 function rEinstellungen() {
   let h = `<div style="color:white;font-weight:800;font-size:15px;margin-bottom:7px">Einstellungen</div>`;
   const syncMap = {
@@ -1043,6 +1117,7 @@ function rEinstellungen() {
   };
   const ss = syncMap[syncStatus] || syncMap.off;
   h += `<div class="card"><div class="ct">Cloud-Sync</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:10px;height:10px;border-radius:50%;background:${ss.c};flex-shrink:0"></span><b style="font-size:13px;color:var(--t1)">${ss.t}</b></div><div style="font-size:11px;color:var(--t2);line-height:1.5">${ss.d}</div></div>`;
+  h += pushCard();
   h += `<div class="card"><div class="ct">Familie</div>`
     + `<div style="margin-bottom:8px">${fieldBlock("Familienname", `<input id="setFn" class="fi" style="margin-bottom:0" value="${esc(W.familyName)}">`)}</div>`
     + `<div style="margin-bottom:8px">${fieldBlock("Mitglieder-Zeile (unter dem Familiennamen)", `<input id="setFm" class="fi" style="margin-bottom:0" value="${esc(W.familyMembers)}">`)}</div>`
@@ -1243,6 +1318,10 @@ document.addEventListener("click", function(e) {
   if (sdt) { toggleSportDetail(sdt.dataset.sportDetail); return; }
   const ck = e.target.closest("[data-chk]");
   if (ck) { const k=ck.dataset.chk; W.chk[k]=!W.chk[k]; sv(); rEinkauf(); return; }
+  const pen = e.target.closest("[data-push-enable]");
+  if (pen) { enablePush(); return; }
+  const pdi = e.target.closest("[data-push-disable]");
+  if (pdi) { disablePush(); return; }
   const rck = e.target.closest("[data-reset-chk]");
   if (rck) { if (confirm("Alle Haken in der Einkaufsliste zuruecksetzen?")) { W.chk={}; sv(); rEinkauf(); } return; }
   const af = e.target.closest("[data-close-af]");
@@ -1425,7 +1504,8 @@ function pinKey(k) {
   if (pinBuf.length >= 4) {
     if (pinBuf === W.pin) {
       rlReset("pin");
-      showScr("app"); renderDays(); renderCurrent();
+      showScr("app"); renderDays(); setTab(requestedTab || "uebersicht");
+      requestedTab = null;
     } else {
       rlRecordFail("pin");
       const e = document.getElementById("pin-err");
@@ -1595,7 +1675,7 @@ function rWeekNav() {
 function setTab(name) {
   W.tab = name; sv();
   document.querySelectorAll("[data-tab]").forEach(b => { b.classList.toggle("on", b.dataset.tab===name); });
-  ["plan","sterne","schule","termine","einkauf","sport","einstellungen"].forEach(t => {
+  ["uebersicht","plan","sterne","schule","termine","einkauf","sport","einstellungen"].forEach(t => {
     const el = document.getElementById("t-"+t);
     if (el) el.style.display = t===name?"block":"none";
   });
@@ -1603,13 +1683,43 @@ function setTab(name) {
 }
 
 function renderCurrent() {
-  if (W.tab==="plan") rPlan();
+  if (W.tab==="uebersicht") rUebersicht();
+  else if (W.tab==="plan") rPlan();
   else if (W.tab==="sterne") rSterne();
   else if (W.tab==="schule") rSchule();
   else if (W.tab==="termine") rTermine();
   else if (W.tab==="einkauf") rEinkauf();
   else if (W.tab==="sport") rSport();
   else if (W.tab==="einstellungen") rEinstellungen();
+}
+
+// UEBERSICHT (Dashboard fuer heute)
+function rUebersicht() {
+  const today = new Date(), todayIso = isoDate(today), di = (today.getDay()+6)%7;
+  let h = `<div style="color:white;font-weight:800;font-size:16px;margin-bottom:10px">Heute - ${DAYSF[di]}, ${fmtD(todayIso)}</div>`;
+
+  const ev = eventsOnDate(today).sort((a,b) => (a.time||"99:99").localeCompare(b.time||"99:99"));
+  h += `<div class="card"><div class="ct">&#128197; Termine heute</div>`;
+  h += ev.length ? ev.map(e => `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span style="color:var(--t1);font-weight:700">${e.title}</span><span style="color:var(--t3)">${e.time?e.time+" · ":""}${e.who}</span></div>`).join("") : `<div style="font-size:12px;color:var(--t3)">Keine Termine</div>`;
+  h += `</div>`;
+
+  const sp = sortSched(W.sched.filter(s => s.day===DAYS[di]));
+  h += `<div class="card"><div class="ct">&#127939; Bewegung heute</div>`;
+  h += sp.length ? sp.map(s => `<div style="padding:4px 0;font-size:12px;color:var(--t1)">${activityIcon(s)} <b>${s.title}</b> <span style="color:var(--t3)">(${s.who})</span></div>`).join("") : `<div style="font-size:12px;color:var(--t3)">Freier Tag</div>`;
+  h += `</div>`;
+
+  h += `<div class="card"><div class="ct">&#127869; Essen heute</div>`
+    + [["f","Fruehstueck"],["m","Mittag"],["a","Abend"],["s","Snack"]].map(([slot,lb]) => {
+      const meal = getMeal(di, slot);
+      return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--t3)">${lb}</span><span style="color:var(--t1);font-weight:700">${meal.n}</span></div>`;
+    }).join("")
+    + `</div>`;
+
+  h += `<div class="card"><div class="ct">&#11088; Sterne-Stand</div>`
+    + W.kids.map(k => `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="font-size:12px;color:var(--t1)">${k.emoji} ${esc(k.name)}</span><span style="font-weight:800;color:#f9a825">${W.stars[k.id]||0} &#11088;</span></div>`).join("")
+    + `</div>`;
+
+  document.getElementById("t-uebersicht").innerHTML = h;
 }
 
 // PLAN

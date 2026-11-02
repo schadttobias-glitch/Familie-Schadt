@@ -5,6 +5,7 @@ const DB_URL = "https://familie-schadt-default-rtdb.europe-west1.firebasedatabas
 const SYNC_ROOT = "sync/e4b3180ede0410d87e4caa2d05159126";
 const SYNC_PATH = SYNC_ROOT + "/state";
 const IMPORTED_PATH = SYNC_ROOT + "/imported";
+const PUSH_PATH = SYNC_ROOT + "/push";
 
 let cachedToken = null;
 let cachedTokenExp = 0;
@@ -53,4 +54,42 @@ async function writeImportedPerson(personId, items) {
   return res.json();
 }
 
-module.exports = { DB_URL, SYNC_PATH, IMPORTED_PATH, getIdToken, fetchState, writeImportedPerson };
+// Alle importierten Termine aller Personen zusammengefasst, wie der Client
+// sie in W.imported haelt.
+async function fetchImported() {
+  const token = await getIdToken();
+  const res = await fetch(`${DB_URL}/${IMPORTED_PATH}.json?auth=${token}`);
+  if (!res.ok) throw new Error("Datenbank-Lesefehler: " + res.status);
+  const raw = await res.json() || {};
+  return Object.values(raw).flatMap(p => (p && Array.isArray(p.items)) ? p.items : []);
+}
+
+// Web-Push-Abos der Geraete, die taegliche Erinnerungen bekommen wollen.
+// Pro Geraet ein eigener Schluessel (vom Client per crypto.randomUUID()
+// erzeugt), damit ein Geraet sein Abo erneut speichern kann ohne Duplikate.
+async function savePushSubscription(id, subscription) {
+  const token = await getIdToken();
+  const res = await fetch(`${DB_URL}/${PUSH_PATH}.json?auth=${token}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ [id]: subscription }),
+  });
+  if (!res.ok) throw new Error("Datenbank-Schreibfehler: " + res.status);
+  return res.json();
+}
+async function deletePushSubscription(id) {
+  const token = await getIdToken();
+  await fetch(`${DB_URL}/${PUSH_PATH}/${encodeURIComponent(id)}.json?auth=${token}`, { method: "DELETE" });
+}
+async function fetchPushSubscriptions() {
+  const token = await getIdToken();
+  const res = await fetch(`${DB_URL}/${PUSH_PATH}.json?auth=${token}`);
+  if (!res.ok) throw new Error("Datenbank-Lesefehler: " + res.status);
+  return (await res.json()) || {};
+}
+
+module.exports = {
+  DB_URL, SYNC_PATH, IMPORTED_PATH, PUSH_PATH,
+  getIdToken, fetchState, writeImportedPerson, fetchImported,
+  savePushSubscription, deletePushSubscription, fetchPushSubscriptions,
+};
