@@ -431,7 +431,7 @@ let W = {
     {id:"s11",day:"So",type:"ruhe",title:"Ausschlafen",who:"Familie"},
     {id:"s12",day:"So",type:"training",title:"Bewegungsspiele",who:"Familie"},
   ],
-  recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false,
+  recEdit:null, taskEdit:null, showAF:false, showSF:false, showNT:false, sportDetail:null,
   dark:false, mealEdit:null, mealOv:{}, mealNewForm:null, customRecipes:[], weekOv:{}, weekOffset:0,
   planTemplates:{}, showTpl:false, mealRatings:{}, stickers:{}, favRecipes:[], sportDone:{}, calMonthOffset:0, calView:"monat", quickAddDate:null,
   familyName:"Familie Schadt", familyMembers:"\u{1F468} Tobi · \u{1F469} Eva · \u{1F467} Alia · \u{1F91A} Tiana",
@@ -460,7 +460,7 @@ const FIREBASE_CONFIG = {
 };
 const SYNC_PATH = "sync/e4b3180ede0410d87e4caa2d05159126/state";
 const IMPORTED_PATH = "sync/e4b3180ede0410d87e4caa2d05159126/imported";
-const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm","calMonthOffset","calView","quickAddDate","imported"];
+const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm","calMonthOffset","calView","quickAddDate","imported","sportDetail"];
 let syncDbRef = null, syncApplyingRemote = false, syncPushTimer = null, syncLastPushedAt = 0, syncStatus = "off";
 function syncableState() {
   const out = {};
@@ -659,16 +659,29 @@ function migrateHistIds() {
   if (changed) sv();
 }
 const TOBI_TRAININGSPLAN = [
-  {id:"tp1", day:"Mo", type:"training", title:"Ruecken- & Bauchtraining (Tiefenmuskulatur)", who:"Tobi", time:""},
-  {id:"tp2", day:"Mi", type:"training", title:"Knie-Aufbau & Beinachse", who:"Tobi", time:""},
-  {id:"tp3", day:"Fr", type:"training", title:"Mobility & Ganzkoerper", who:"Tobi", time:""},
+  {id:"tp1", day:"Mo", type:"training", title:"Ruecken- & Bauchtraining (Tiefenmuskulatur)", who:"Tobi", time:"",
+    notes:["Katze-Kamel zum Aufwaermen, 10x","McGill Curl-Up (nur Kopf/Schultern leicht heben, Lendenwirbelsaeule bleibt neutral -- kein klassischer Crunch!), 3x8","Bird-Dog (Arm + gegenueberliegendes Bein strecken), 3x8 je Seite","Side Plank, auf Knien wenn noetig, 3x20-30 Sek je Seite","Dead Bug, 3x10 je Seite","Glute Bridge, 3x12","Vermeiden: klassische Sit-ups, Rumpfdrehungen mit Gewicht, gebuecktes Heben"]},
+  {id:"tp2", day:"Mi", type:"training", title:"Knie-Aufbau & Beinachse", who:"Tobi", time:"",
+    notes:["5 Min lockeres Radfahren/Ergometer zum Aufwaermen","Wall Sit, nicht zu tief, 3x20-30 Sek","Terminal Knee Extension mit Band, 3x15 je Seite (staerkt den inneren Oberschenkelmuskel)","Step-Ups auf niedrige Stufe -- Knie bewusst nicht nach innen fallen lassen, 3x10 je Seite","Clamshells mit Mini-Band, 3x15 je Seite","Monster Walk seitlich mit Band, 3x10 Schritte je Richtung","Wadenheber, 3x15","Vermeiden: tiefe Kniebeugen unter Last, Ausfallschritte mit tiefem Winkel, Joggen ueber 4-5 km"]},
+  {id:"tp3", day:"Fr", type:"training", title:"Mobility & Ganzkoerper", who:"Tobi", time:"",
+    notes:["Brustwirbelsaeulen-Rotation, 2x8 je Seite","Hueftbeuger-/Oberschenkelrueckseite-Dehnung, je 2x30 Sek","Liegestuetz auf Knien oder an der Wand, 3x10","Rudern mit Band, 3x12","Ausklang: Rueckenlage, Beine angewinkelt, 5 Min Bauchatmung"]},
 ];
 function migrateTrainingsplan() {
-  if (W.trainingsplanAdded) return;
-  if (!W.sched) W.sched = [];
-  TOBI_TRAININGSPLAN.forEach(e => { if (!W.sched.some(s => s.id === e.id)) W.sched.push(e); });
-  W.trainingsplanAdded = true;
-  sv();
+  if (!W.trainingsplanAdded) {
+    if (!W.sched) W.sched = [];
+    TOBI_TRAININGSPLAN.forEach(e => { if (!W.sched.some(s => s.id === e.id)) W.sched.push(e); });
+    W.trainingsplanAdded = true;
+    sv();
+  }
+  if (!W.trainingsplanNotesAdded) {
+    if (!W.sched) W.sched = [];
+    TOBI_TRAININGSPLAN.forEach(e => {
+      const existing = W.sched.find(s => s.id === e.id);
+      if (existing) existing.notes = e.notes;
+    });
+    W.trainingsplanNotesAdded = true;
+    sv();
+  }
 }
 // Die geheime Sync-Pfad-ID wurde erneuert (die alte stand oeffentlich im
 // GitHub-Repo). Der bereits lokal vorhandene Stand (aus localStorage) wird
@@ -1203,6 +1216,8 @@ document.addEventListener("click", function(e) {
   if (sd) { W.sched=W.sched.filter(s=>s.id!==sd.dataset.schedDel); sv(); rSport(); return; }
   const spd = e.target.closest("[data-sport-done]");
   if (spd) { const id=spd.dataset.sportDone; if(!W.sportDone) W.sportDone={}; const wk=weekKey(new Date()); if(W.sportDone[id]===wk) delete W.sportDone[id]; else W.sportDone[id]=wk; sv(); rSport(); return; }
+  const sdt = e.target.closest("[data-sport-detail]");
+  if (sdt) { toggleSportDetail(sdt.dataset.sportDetail); return; }
   const ck = e.target.closest("[data-chk]");
   if (ck) { const k=ck.dataset.chk; W.chk[k]=!W.chk[k]; sv(); rEinkauf(); return; }
   const rck = e.target.closest("[data-reset-chk]");
@@ -2149,9 +2164,12 @@ function rEinkauf() {
 function saveSched() {
   const ti=document.getElementById("nsti")?.value.trim(); if(!ti)return;
   const time=document.getElementById("nstime")?.value||"";
-  W.sched.push({id:"u"+Date.now(),day:document.getElementById("nsd")?.value,type:document.getElementById("nst")?.value,title:ti,who:document.getElementById("nstw")?.value||"Familie",time});
+  const notesText=document.getElementById("nstn")?.value.trim()||"";
+  const notes=notesText?notesText.split("\n").map(z=>z.trim()).filter(z=>z):[];
+  W.sched.push({id:"u"+Date.now(),day:document.getElementById("nsd")?.value,type:document.getElementById("nst")?.value,title:ti,who:document.getElementById("nstw")?.value||"Familie",time,notes});
   W.showSF=false; sv(); rSport();
 }
+function toggleSportDetail(id) { W.sportDetail = W.sportDetail===id ? null : id; sv(); rSport(); }
 function getSportTally() {
   const people = [...W.kids, ...(W.parents||[])].map(p=>p.name);
   const tally = {};
@@ -2164,12 +2182,15 @@ function rSport() {
   const whoOpts = ["Familie","Kinder",...W.kids.map(k=>k.name),...(W.parents||[]).map(p=>p.name)];
   let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="color:white;font-weight:800;font-size:15px">Bewegung - ${d}</div><button data-toggle-sf="1" style="background:white;color:#764ba2;border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">+ Aktivitaet</button></div>`;
   if (W.showSF) {
-    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select><input id="nstime" type="time" style="width:86px;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><select id="nstw" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:13px;margin-bottom:8px">${whoOpts.map(n=>`<option${n==="Familie"?" selected":""}>${esc(n)}</option>`).join("")}</select><button data-save-sched="1" class="sb">Speichern</button></div>`;
+    h += `<div class="card"><div class="ct">Neue Aktivitaet</div><div style="display:flex;gap:6px;margin-bottom:6px"><select id="nsd" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px">${DAYS.map(x=>`<option${x===d?" selected":""}>${x}</option>`).join("")}</select><select id="nst" style="flex:1;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"><option value="training">Training</option><option value="lernen">Lernen</option><option value="ruhe">Ruhe</option></select><input id="nstime" type="time" style="width:86px;padding:7px;border-radius:8px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:12px"></div><input id="nsti" class="fi" placeholder="Titel (z.B. Fussball, Wandern)"><select id="nstw" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:2px solid var(--bd);background:var(--ib);color:var(--t1);font-size:13px;margin-bottom:8px">${whoOpts.map(n=>`<option${n==="Familie"?" selected":""}>${esc(n)}</option>`).join("")}</select><textarea id="nstn" class="fi" placeholder="Trainingsplan/Details (optional) - eine Uebung pro Zeile" style="min-height:60px;resize:vertical"></textarea><button data-save-sched="1" class="sb">Speichern</button></div>`;
   }
   if (!its.length) h += `<div class="eb">Freier Tag</div>`;
   its.forEach(s => {
-    const c=TC[s.type], done=isSportDone(s.id);
-    h += `<div class="spk" style="background:${c.bg};border-color:${c.bd};${done?"opacity:.55":""}"><div style="display:flex;align-items:center;gap:7px"><button data-sport-done="${s.id}" title="Diese Woche erledigt?" style="background:${done?c.bd:"transparent"};color:${done?"white":c.bd};border:2px solid ${c.bd};border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0">${done?"&#10003;":""}</button><div style="flex:1"><div style="font-weight:800;font-size:13px;color:${c.tx};${done?"text-decoration:line-through":""}">${activityIcon(s)} ${s.title}${s.time?` <span style="font-weight:600;opacity:.7">· ${s.time}</span>`:""}</div><div style="font-size:10px;color:${c.tx};opacity:.7">${s.who}</div></div><span style="background:${c.bd}30;color:${c.tx};border-radius:6px;padding:2px 6px;font-size:9px;font-weight:700">${c.lb}</span><button data-sched-del="${s.id}" class="dlb">x</button></div></div>`;
+    const c=TC[s.type], done=isSportDone(s.id), hasNotes=s.notes && s.notes.length, open=W.sportDetail===s.id;
+    h += `<div class="spk" style="background:${c.bg};border-color:${c.bd};${done?"opacity:.55":""}"><div style="display:flex;align-items:center;gap:7px"><button data-sport-done="${s.id}" title="Diese Woche erledigt?" style="background:${done?c.bd:"transparent"};color:${done?"white":c.bd};border:2px solid ${c.bd};border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0">${done?"&#10003;":""}</button><div style="flex:1"><div style="font-weight:800;font-size:13px;color:${c.tx};${done?"text-decoration:line-through":""}">${activityIcon(s)} ${s.title}${s.time?` <span style="font-weight:600;opacity:.7">· ${s.time}</span>`:""}</div><div style="font-size:10px;color:${c.tx};opacity:.7">${s.who}</div></div><span style="background:${c.bd}30;color:${c.tx};border-radius:6px;padding:2px 6px;font-size:9px;font-weight:700">${c.lb}</span><button data-sched-del="${s.id}" class="dlb">x</button></div>`
+      + (hasNotes ? `<button data-sport-detail="${s.id}" style="margin-top:8px;background:${c.bd}25;color:${c.tx};border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">${open?"Plan ausblenden":"Plan anzeigen"}</button>` : "")
+      + (hasNotes && open ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid ${c.bd}50">` + s.notes.map(n => `<div style="font-size:11px;color:${c.tx};padding:2px 0">- ${n}</div>`).join("") + `</div>` : "")
+      + `</div>`;
   });
   h += `<div style="color:white;font-weight:800;font-size:14px;margin-top:12px;margin-bottom:7px">Wochenplan</div><div class="card">`;
   DAYS.forEach(dd => {
