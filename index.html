@@ -458,8 +458,8 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "229363507723",
   appId: "1:229363507723:web:01bbb9cc08a550b711dd0e"
 };
-const SYNC_PATH = "sync/3cvwq26saehh370vawcftmi2/state";
-const IMPORTED_PATH = "sync/3cvwq26saehh370vawcftmi2/imported";
+const SYNC_PATH = "sync/e4b3180ede0410d87e4caa2d05159126/state";
+const IMPORTED_PATH = "sync/e4b3180ede0410d87e4caa2d05159126/imported";
 const SYNC_EXCLUDE = ["dark","weekOffset","day","tab","sk","ktab","mealEdit","showAF","showSF","showNT","showTpl","recEdit","taskEdit","mealNewForm","calMonthOffset","calView","quickAddDate","imported"];
 let syncDbRef = null, syncApplyingRemote = false, syncPushTimer = null, syncLastPushedAt = 0, syncStatus = "off";
 function syncableState() {
@@ -500,6 +500,7 @@ async function initCloudSync() {
     firebase.initializeApp(FIREBASE_CONFIG);
     await firebase.auth().signInAnonymously();
     syncDbRef = firebase.database().ref(SYNC_PATH);
+    migrateSyncRootV2();
     firebase.database().ref(IMPORTED_PATH).on("value", snap => {
       const v = snap.val() || {};
       W.imported = Object.values(v).flatMap(p => (p && Array.isArray(p.items)) ? p.items : []);
@@ -513,6 +514,7 @@ async function initCloudSync() {
       Object.keys(remote.data).forEach(k => { if (!SYNC_EXCLUDE.includes(k)) W[k] = remote.data[k]; });
       migrateHistIds();
       migrateTrainingsplan();
+      migrateSyncRootV2();
       syncLastPushedAt = remote.updatedAt;
       try { localStorage.setItem("fs11", JSON.stringify(W)); } catch(e) {}
       syncApplyingRemote = false;
@@ -666,6 +668,15 @@ function migrateTrainingsplan() {
   if (!W.sched) W.sched = [];
   TOBI_TRAININGSPLAN.forEach(e => { if (!W.sched.some(s => s.id === e.id)) W.sched.push(e); });
   W.trainingsplanAdded = true;
+  sv();
+}
+// Die geheime Sync-Pfad-ID wurde erneuert (die alte stand oeffentlich im
+// GitHub-Repo). Der bereits lokal vorhandene Stand (aus localStorage) wird
+// einmalig zum neuen Pfad hochgeschoben -- kein Lesen des alten Pfads noetig,
+// jedes Geraet hat den aktuellen Stand ja schon lokal gecacht.
+function migrateSyncRootV2() {
+  if (W.syncRootV2) return;
+  W.syncRootV2 = true;
   sv();
 }
 const PLAN_RID = [

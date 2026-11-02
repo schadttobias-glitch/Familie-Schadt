@@ -2,7 +2,7 @@
 
 const FIREBASE_API_KEY = "AIzaSyCpgf8FDf2LGsOtY6aaZOX3j2X8Ck2FnbM";
 const DB_URL = "https://familie-schadt-default-rtdb.europe-west1.firebasedatabase.app";
-const SYNC_ROOT = "sync/3cvwq26saehh370vawcftmi2";
+const SYNC_ROOT = "sync/e4b3180ede0410d87e4caa2d05159126";
 const SYNC_PATH = SYNC_ROOT + "/state";
 const IMPORTED_PATH = SYNC_ROOT + "/imported";
 
