@@ -1279,10 +1279,51 @@ document.addEventListener("change", function(e) {
 // APP LOCK (Zugriffsschutz fuer die ganze App - nur fuer die Familie, nicht oeffentlich)
 const APP_LOCK_CODE = "573192";
 let lockBuf = "";
+// Sperre nach zu vielen Fehlversuchen -- rein lokal (localStorage), keine
+// Server-Pruefung. Haelt neugierige Finger am Geraet ab, schuetzt aber NICHT
+// gegen Zugriff direkt auf die Datenbank (siehe Sicherheitshinweis im Code).
+const RL_MAX_FAILS = 5;
+const RL_BASE_LOCK_MS = 60000;
+const RL_MAX_LOCK_MS = 30*60000;
+function rlState(prefix) {
+  let fails=0, until=0, lockCount=0;
+  try {
+    fails = Number(localStorage.getItem("fs11-"+prefix+"Fails"))||0;
+    until = Number(localStorage.getItem("fs11-"+prefix+"Until"))||0;
+    lockCount = Number(localStorage.getItem("fs11-"+prefix+"LockCount"))||0;
+  } catch(e) {}
+  return {fails, until, lockCount};
+}
+function rlRemaining(prefix) { return Math.max(0, Math.ceil((rlState(prefix).until - Date.now())/1000)); }
+function rlIsLocked(prefix) { return rlRemaining(prefix) > 0; }
+function rlRecordFail(prefix) {
+  const st = rlState(prefix);
+  const fails = st.fails + 1;
+  try {
+    if (fails >= RL_MAX_FAILS) {
+      const lockCount = st.lockCount + 1;
+      const ms = Math.min(RL_BASE_LOCK_MS * Math.pow(2, lockCount-1), RL_MAX_LOCK_MS);
+      localStorage.setItem("fs11-"+prefix+"Until", String(Date.now()+ms));
+      localStorage.setItem("fs11-"+prefix+"LockCount", String(lockCount));
+      localStorage.setItem("fs11-"+prefix+"Fails", "0");
+    } else {
+      localStorage.setItem("fs11-"+prefix+"Fails", String(fails));
+    }
+  } catch(e) {}
+}
+function rlReset(prefix) {
+  try {
+    localStorage.removeItem("fs11-"+prefix+"Fails");
+    localStorage.removeItem("fs11-"+prefix+"Until");
+    localStorage.removeItem("fs11-"+prefix+"LockCount");
+  } catch(e) {}
+}
 function renderLockUI() {
   const dots = document.getElementById("lock-dots");
   const grid = document.getElementById("lock-grid");
   if (!dots || !grid) return;
+  const e = document.getElementById("lock-err");
+  if (rlIsLocked("lock")) { if (e) e.textContent = "Zu viele Fehlversuche. Bitte warte " + rlRemaining("lock") + "s."; }
   dots.innerHTML = Array.from({length:6}, (_,i) =>
     `<div style="width:14px;height:14px;border-radius:50%;background:${i<lockBuf.length?"white":"rgba(255,255,255,0.3)"};border:2px solid white"></div>`
   ).join("");
@@ -1291,17 +1332,20 @@ function renderLockUI() {
   ).join("");
 }
 function lockKey(k) {
+  if (rlIsLocked("lock")) { renderLockUI(); return; }
   if (k==="X") { lockBuf=lockBuf.slice(0,-1); renderLockUI(); return; }
   lockBuf += k;
   renderLockUI();
   if (lockBuf.length >= 6) {
     if (lockBuf === APP_LOCK_CODE) {
+      rlReset("lock");
       try { localStorage.setItem("fs11-unlocked","1"); } catch(e) {}
       showScr("start");
     } else {
+      rlRecordFail("lock");
       const e = document.getElementById("lock-err");
-      if (e) e.textContent = "Falscher Code!";
-      setTimeout(() => { lockBuf=""; renderLockUI(); if(e) e.textContent=""; }, 1000);
+      if (!rlIsLocked("lock") && e) e.textContent = "Falscher Code!";
+      setTimeout(() => { lockBuf=""; renderLockUI(); if(e && !rlIsLocked("lock")) e.textContent=""; }, 1000);
     }
   }
 }
@@ -1315,6 +1359,8 @@ function renderPinUI() {
   const dots = document.getElementById("pin-dots");
   const grid = document.getElementById("pin-grid");
   if (!dots || !grid) return;
+  const e = document.getElementById("pin-err");
+  if (rlIsLocked("pin")) { if (e) e.textContent = "Zu viele Fehlversuche. Bitte warte " + rlRemaining("pin") + "s."; }
   dots.innerHTML = [0,1,2,3].map(i =>
     `<div style="width:16px;height:16px;border-radius:50%;background:${i<pinBuf.length?"white":"rgba(255,255,255,0.3)"};border:2px solid white"></div>`
   ).join("");
@@ -1323,16 +1369,19 @@ function renderPinUI() {
   ).join("");
 }
 function pinKey(k) {
+  if (rlIsLocked("pin")) { renderPinUI(); return; }
   if (k==="X") { pinBuf=pinBuf.slice(0,-1); renderPinUI(); return; }
   pinBuf += k;
   renderPinUI();
   if (pinBuf.length >= 4) {
     if (pinBuf === W.pin) {
+      rlReset("pin");
       showScr("app"); renderDays(); renderCurrent();
     } else {
+      rlRecordFail("pin");
       const e = document.getElementById("pin-err");
-      if (e) e.textContent = "Falscher PIN!";
-      setTimeout(() => { pinBuf=""; renderPinUI(); if(e) e.textContent=""; }, 1000);
+      if (!rlIsLocked("pin") && e) e.textContent = "Falscher PIN!";
+      setTimeout(() => { pinBuf=""; renderPinUI(); if(e && !rlIsLocked("pin")) e.textContent=""; }, 1000);
     }
   }
 }
