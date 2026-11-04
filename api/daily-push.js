@@ -18,10 +18,22 @@ function recOccursOn(item, date) {
   return true;
 }
 
+// Tobis importierter Google-Kalender enthaelt auch Arbeitstermine -- die
+// sollen in der morgendlichen Zusammenfassung nach Feierabend (nach 15 Uhr)
+// und samstags (kein Arbeitstag) nicht auftauchen. Manuell in der App
+// eingetragene Termine sind nie "imported" und daher nie betroffen.
+function isTobiArbeitsLaerm(e, dayIdx) {
+  if (e.who !== "Tobi" || !e.imported) return false;
+  if (dayIdx === 5) return true;
+  if (e.time && e.time > "15:00") return true;
+  return false;
+}
+
 function buildSummary(state, imported) {
   const now = new Date();
   const iso = isoDate(now);
-  const dayName = DAYS[(now.getDay()+6)%7];
+  const dayIdx = (now.getDay()+6)%7;
+  const dayName = DAYS[dayIdx];
   const parts = [];
 
   const rec = (state.rec || []).filter(r => recOccursOn(r, now));
@@ -29,6 +41,7 @@ function buildSummary(state, imported) {
   const aptsDated = (state.apts || []).filter(a => a.date === iso);
   const imp = (imported || []).filter(e => iso >= e.date && iso <= (e.dateEnd || e.date));
   const termine = [...rec, ...aptsRecurring, ...aptsDated, ...imp]
+    .filter(e => !isTobiArbeitsLaerm(e, dayIdx))
     .sort((a,b) => (a.time||"99:99").localeCompare(b.time||"99:99"));
   if (termine.length) parts.push("Termine: " + termine.map(t => (t.time?t.time+" ":"")+t.title).join(", "));
 
